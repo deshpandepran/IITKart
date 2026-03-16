@@ -66,7 +66,7 @@ export const getAvailableDeliveries = async (req: AuthRequest, res: Response): P
       },
       include: {
         items: true,
-        user: {
+        customer: {
           select: { id: true, name: true, phone: true },
         },
       },
@@ -88,7 +88,7 @@ export const getAvailableDeliveries = async (req: AuthRequest, res: Response): P
 // @route   PATCH /api/riders/deliveries/:id/accept
 export const acceptDelivery = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const orderId = parseInt(req.params.id);
+    const orderId = parseInt(req.params.id as string);
 
     if (isNaN(orderId)) {
       res.status(400).json({ message: 'Invalid order ID' });
@@ -109,22 +109,20 @@ export const acceptDelivery = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    // Concurrency-safe update: the `where` clause checks BOTH id AND riderId: null
-    // If another rider already claimed it, riderId won't be null and Prisma throws P2025
     try {
       const updatedOrder = await prisma.order.update({
         where: {
           id: orderId,
-          riderId: null,   // Only succeeds if still unassigned
-          status: 'READY', // Only succeeds if still in READY state
+          riderId: null,
+          status: 'READY',
         },
         data: {
           riderId: riderProfile.id,
-          status: 'OUT_FOR_DELIVERY',
+          status: 'PICKED_UP',
         },
         include: {
           items: true,
-          user: {
+          customer: {
             select: { id: true, name: true, phone: true },
           },
         },
@@ -135,7 +133,6 @@ export const acceptDelivery = async (req: AuthRequest, res: Response): Promise<v
         order: updatedOrder,
       });
     } catch (prismaError: any) {
-      // P2025 = Record not found — means either already taken or doesn't exist
       if (prismaError?.code === 'P2025') {
         res.status(409).json({
           message: 'Order is no longer available. It may have been accepted by another rider or is not in READY state.',
@@ -154,7 +151,7 @@ export const acceptDelivery = async (req: AuthRequest, res: Response): Promise<v
 // @route   PATCH /api/riders/deliveries/:id/complete
 export const completeDelivery = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const orderId = parseInt(req.params.id);
+    const orderId = parseInt(req.params.id as string);
 
     if (isNaN(orderId)) {
       res.status(400).json({ message: 'Invalid order ID' });
@@ -170,7 +167,6 @@ export const completeDelivery = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Fetch the order first to do authorization check
     const order = await prisma.order.findUnique({
       where: { id: orderId },
     });
@@ -180,7 +176,6 @@ export const completeDelivery = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Authorization: rider can only complete their OWN deliveries
     if (order.riderId !== riderProfile.id) {
       res.status(403).json({
         message: 'Forbidden. You can only complete deliveries assigned to you.',
@@ -193,9 +188,9 @@ export const completeDelivery = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    if (order.status !== 'OUT_FOR_DELIVERY') {
+    if (order.status !== 'PICKED_UP') {
       res.status(400).json({
-        message: `Cannot complete order with status: ${order.status}. Order must be OUT_FOR_DELIVERY.`,
+        message: `Cannot complete order with status: ${order.status}. Order must be PICKED_UP.`,
       });
       return;
     }
@@ -205,7 +200,7 @@ export const completeDelivery = async (req: AuthRequest, res: Response): Promise
       data: { status: 'DELIVERED' },
       include: {
         items: true,
-        user: {
+        customer: {
           select: { id: true, name: true, phone: true },
         },
       },

@@ -5,7 +5,7 @@ import {
   updatePassword
 } from "../controllers/userController.js";
 
-import { protect } from "../middlewares/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
