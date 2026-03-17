@@ -53,11 +53,11 @@ model VendorProfile {
   isOpen      Boolean @default(true)
 
   orders Order[]
+  products Product[]
 
   userId Int  @unique
   user   User @relation(fields: [userId], references: [id])
 
-  // products Product[]  (will be added later)
 }
 
 model RiderProfile {
@@ -99,6 +99,7 @@ model OrderItem {
   price     Float
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
 }
 
 model Cart {
@@ -111,10 +112,27 @@ model Cart {
 }
 
 model CartItem {
-  id        Int  @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   cartId    Int
+  cart      Cart    @relation(fields: [cartId], references: [id])
   productId Int
+  product   Product @relation(fields: [productId], references: [id])
   quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  cart Cart @relation(fields: [cartId], references: [id])
+model Product {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  isAvailable Boolean        @default(true)
+  vendorId    Int
+  vendor      VendorProfile  @relation(fields: [vendorId], references: [id])
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
