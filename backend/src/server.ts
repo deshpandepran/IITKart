@@ -6,6 +6,8 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from "./routes/userRoutes.js";
 import riderRoutes from './routes/riderRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
+import productRoutes from "./routes/productRoutes.js";
+import vendorRoutes from "./routes/vendorRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 
 
@@ -24,6 +26,8 @@ app.use("/api/users", userRoutes);
 app.use('/api/riders', riderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/vendors", vendorRoutes);
 
 
 app.get('/health', (req: Request, res: Response) => {
