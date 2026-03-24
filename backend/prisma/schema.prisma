@@ -86,6 +86,9 @@ model RiderProfile {
   vehicleType String
   vehicleNo   String?
   isAvailable Boolean @default(true)
+  
+  totalEarnings   Float   @default(0)
+  totalDeliveries Int     @default(0)
 
   deliveries Order[]
 
