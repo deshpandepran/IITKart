@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/app/contexts/AppContext';
+import api from '@/api/axios';
 import { Header } from '@/app/components/Header';
 import { Sidebar, SidebarItem } from '@/app/components/Sidebar';
 import { Input } from '@/app/components/ui/input';
@@ -40,7 +41,7 @@ const NAV_ITEMS: SidebarItem[] = [
 
 export function AdminInterface() {
   const navigate = useNavigate();
-  const { orders, vendors, users, products, updateVendor, updateUser, updateOrderStatus, currentUser, setCurrentUser, complaints, updateComplaint } = useApp();
+  const { products, currentUser } = useApp();
   const [activeTab, setActiveTab]     = useState('dashboard');
   const [searchUser, setSearchUser]   = useState('');
   const [searchVendor, setSearchVendor] = useState('');
@@ -48,19 +49,34 @@ export function AdminInterface() {
   React.useEffect(() => { if (!currentUser || currentUser.role !== 'ADMIN') navigate('/auth'); }, [currentUser, navigate]);
   if (!currentUser || currentUser.role !== 'ADMIN') return null;
 
-  const metrics = useMemo(() => {
-    const total      = orders.length;
-    const today      = orders.filter(o => new Date(o.date).toDateString() === new Date().toDateString()).length;
-    const gmv        = orders.reduce((s, o) => s + o.total, 0);
-    const commission = gmv * 0.15;
-    return {
-      total, today, gmv, commission,
-      activeUsers:   users.filter(u => u.role === 'CUSTOMER').length,
-      activeVendors: vendors.filter(v => v.status === 'active').length,
-      pendingComplaints: (complaints || []).filter(c => c.status === 'pending').length,
-      successRate:   total > 0 ? (orders.filter(o => o.status === 'delivered').length / total * 100).toFixed(1) : 0,
-    };
-  }, [orders, vendors, users, complaints]);
+  const [stats, setStats] = useState<any>(null);
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
+  const [adminVendors, setAdminVendors] = useState<any[]>([]);
+  const [adminOrders, setAdminOrders] = useState<any[]>([]);
+  const [adminComplaints, setAdminComplaints] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (currentUser?.role === 'ADMIN') {
+      api.get('/admin/stats').then(res => setStats(res.data.data)).catch(console.error);
+      api.get('/admin/users?limit=100').then(res => setAdminUsers(res.data.data)).catch(console.error);
+      api.get('/admin/vendors?limit=100').then(res => setAdminVendors(res.data.data)).catch(console.error);
+      api.get('/admin/orders?limit=100').then(res => setAdminOrders(res.data.data)).catch(console.error);
+      api.get('/admin/complaints?limit=100').then(res => setAdminComplaints(res.data.data)).catch(console.error);
+    }
+  }, [currentUser]);
+
+  const metrics = stats ? {
+    total: stats.totalOrders,
+    today: 0,
+    gmv: stats.totalRevenue,
+    commission: stats.totalRevenue * 0.15,
+    activeUsers: stats.activeUsers,
+    activeVendors: stats.activeVendors,
+    pendingComplaints: stats.pendingComplaints,
+    successRate: stats.totalOrders > 0 ? ((adminOrders.filter(o => o.status === 'delivered').length / stats.totalOrders) * 100).toFixed(1) : 0,
+  } : {
+    total: 0, today: 0, gmv: 0, commission: 0, activeUsers: 0, activeVendors: 0, pendingComplaints: 0, successRate: 0
+  };
 
   const weeklyData = useMemo(() => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -69,27 +85,57 @@ export function AdminInterface() {
 
   const statusData = useMemo(() => {
     const counts: Record<string, number> = {};
-    orders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+    adminOrders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [orders]);
+  }, [adminOrders]);
 
   const navItems = NAV_ITEMS.map(item => ({
     ...item,
     badge: item.id === 'complaints' && metrics.pendingComplaints > 0 ? metrics.pendingComplaints : undefined,
   }));
 
-  const filteredUsers   = users.filter(u => u.name.toLowerCase().includes(searchUser.toLowerCase()) || u.email.toLowerCase().includes(searchUser.toLowerCase()));
-  const filteredVendors = vendors.filter(v => v.name.toLowerCase().includes(searchVendor.toLowerCase()));
+  const filteredUsers   = adminUsers.filter(u => u.name?.toLowerCase().includes(searchUser.toLowerCase()) || u.email?.toLowerCase().includes(searchUser.toLowerCase()));
+  const filteredVendors = adminVendors.filter(v => v.name?.toLowerCase().includes(searchVendor.toLowerCase()));
 
-  const exportCSV = (data: any[], filename: string) => {
-    if (!data.length) { toast.error('No data to export'); return; }
-    const keys = Object.keys(data[0]);
-    const csv  = [keys.join(','), ...data.map(row => keys.map(k => JSON.stringify(row[k] ?? '')).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a'); a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    toast.success(`${filename} downloaded!`);
+  const exportCSV = async (type: string, filename: string) => {
+    try {
+      const res = await api.get(`/admin/export/${type}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success(`${filename} downloaded successfully!`);
+    } catch (err) {
+      toast.error(`Export failed for ${filename}`);
+    }
+  };
+
+  const handleBanUser = async (id: string, current: string) => {
+    try {
+      await api.patch(`/admin/users/${id}/ban`);
+      setAdminUsers(adminUsers.map(u => u.id === id ? { ...u, status: current === 'banned' ? 'active' : 'banned' } : u));
+      toast.success(`User ${current === 'banned' ? 'unbanned' : 'banned'}!`);
+    } catch (e) { toast.error('Failed to change user status'); }
+  };
+
+  const handleToggleVendor = async (id: string, current: string) => {
+    try {
+      await api.patch(`/admin/vendors/${id}/status`);
+      setAdminVendors(adminVendors.map(v => v.id === id ? { ...v, status: current === 'active' ? 'suspended' : 'active' } : v));
+      toast.success(`Vendor ${current === 'active' ? 'suspended' : 'activated'}!`);
+    } catch (e) { toast.error('Failed to change vendor status'); }
+  };
+
+  const handleResolveComplaint = async (id: string) => {
+    try {
+      await api.patch(`/admin/complaints/${id}/resolve`, { status: 'resolved' });
+      setAdminComplaints(adminComplaints.map(c => c.id === id ? { ...c, status: 'resolved' } : c));
+      setStats((s: any) => s ? { ...s, pendingComplaints: s.pendingComplaints - 1 } : s);
+      toast.success('Complaint resolved!');
+    } catch (e) { toast.error('Failed to resolve complaint'); }
   };
 
   return (
@@ -158,9 +204,9 @@ export function AdminInterface() {
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                   <div>
                     <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white mb-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>All Orders</h1>
-                    <p className="text-slate-400 text-sm">{orders.length} total orders</p>
+                    <p className="text-slate-400 text-sm">{adminOrders.length} total orders</p>
                   </div>
-                  <button onClick={() => exportCSV(orders, 'orders.csv')}
+                  <button onClick={() => exportCSV('orders', 'orders.csv')}
                     className="flex items-center gap-2 border border-blue-100 dark:border-blue-900/30 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                     <Download className="w-3.5 h-3.5" /> Export CSV
                   </button>
@@ -176,10 +222,10 @@ export function AdminInterface() {
                         </tr>
                       </thead>
                       <tbody>
-                        {orders.map(order => (
+                        {adminOrders.map(order => (
                           <tr key={order.id} className="border-b border-blue-50 dark:border-blue-900/10 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors">
                             <td className="px-4 py-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-300">{order.id}</td>
-                            <td className="px-4 py-3 text-xs text-slate-400">{new Date(order.date).toLocaleDateString('en-IN')}</td>
+                            <td className="px-4 py-3 text-xs text-slate-400">{new Date(order.createdAt || order.date).toLocaleDateString('en-IN')}</td>
                             <td className="px-4 py-3 font-bold text-[#1E3A8A] dark:text-blue-300 text-sm">₹{(order.total + 30).toFixed(2)}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
@@ -211,7 +257,7 @@ export function AdminInterface() {
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                   <div>
                     <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white mb-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>Users</h1>
-                    <p className="text-slate-400 text-sm">{users.length} registered users</p>
+                    <p className="text-slate-400 text-sm">{adminUsers.length} registered users</p>
                   </div>
                   <div className="flex gap-2">
                     <div className="relative">
@@ -219,7 +265,7 @@ export function AdminInterface() {
                       <Input value={searchUser} onChange={e => setSearchUser(e.target.value)} placeholder="Search users…"
                         className="pl-9 h-9 text-sm bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/30 rounded-xl w-48" />
                     </div>
-                    <button onClick={() => exportCSV(users, 'users.csv')}
+                    <button onClick={() => exportCSV('users', 'users.csv')}
                       className="flex items-center gap-2 border border-blue-100 dark:border-blue-900/30 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-2 rounded-xl hover:bg-blue-50 transition-colors">
                       <Download className="w-3.5 h-3.5" /> Export
                     </button>
@@ -255,10 +301,10 @@ export function AdminInterface() {
                             </td>
                             <td className="px-4 py-3">
                               <button
-                                onClick={() => { updateUser(user.id, { status: (user as any).status === 'banned' ? 'active' : 'banned' } as any); toast.success(`User ${(user as any).status === 'banned' ? 'unbanned' : 'banned'}`); }}
-                                className={`text-[10px] font-bold hover:underline ${(user as any).status === 'banned' ? 'text-emerald-600' : 'text-red-500'}`}
+                                onClick={() => handleBanUser(user.id, user.status)}
+                                className={`text-[10px] font-bold hover:underline ${user.status === 'banned' ? 'text-emerald-600' : 'text-red-500'}`}
                               >
-                                {(user as any).status === 'banned' ? 'Unban' : 'Ban'}
+                                {user.status === 'banned' ? 'Unban' : 'Ban'}
                               </button>
                             </td>
                           </tr>
@@ -276,7 +322,7 @@ export function AdminInterface() {
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                   <div>
                     <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white mb-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>Vendors</h1>
-                    <p className="text-slate-400 text-sm">{vendors.length} registered vendors</p>
+                    <p className="text-slate-400 text-sm">{adminVendors.length} registered vendors</p>
                   </div>
                   <div className="flex gap-2">
                     <div className="relative">
@@ -284,7 +330,7 @@ export function AdminInterface() {
                       <Input value={searchVendor} onChange={e => setSearchVendor(e.target.value)} placeholder="Search vendors…"
                         className="pl-9 h-9 text-sm bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/30 rounded-xl w-48" />
                     </div>
-                    <button onClick={() => exportCSV(vendors, 'vendors.csv')}
+                    <button onClick={() => exportCSV('vendors', 'vendors.csv')}
                       className="flex items-center gap-2 border border-blue-100 dark:border-blue-900/30 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-2 rounded-xl hover:bg-blue-50 transition-colors">
                       <Download className="w-3.5 h-3.5" /> Export
                     </button>
@@ -313,7 +359,7 @@ export function AdminInterface() {
                         ))}
                       </div>
                       <button
-                        onClick={() => { updateVendor(vendor.id, { status: vendor.status === 'active' ? 'suspended' : 'active' }); toast.success(`Vendor ${vendor.status === 'active' ? 'deactivated' : 'activated'}!`); }}
+                        onClick={() => handleToggleVendor(vendor.id, vendor.status)}
                         className={`w-full h-9 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
                           vendor.status === 'active'
                             ? 'bg-red-50 dark:bg-red-900/10 text-red-500 hover:bg-red-100 border-red-200 dark:border-red-900/30'
@@ -332,25 +378,25 @@ export function AdminInterface() {
               <div>
                 <div className="mb-4">
                   <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white mb-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>Complaints</h1>
-                  <p className="text-slate-400 text-sm">{metrics.pendingComplaints} pending · {(complaints || []).length} total</p>
+                  <p className="text-slate-400 text-sm">{metrics.pendingComplaints} pending · {(adminComplaints || []).length} total</p>
                 </div>
-                {(!complaints || complaints.length === 0) ? (
+                {(!adminComplaints || adminComplaints.length === 0) ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30">
                     <MessageSquare className="w-12 h-12 text-blue-200 dark:text-blue-800 mb-4" />
                     <p className="text-slate-400 text-sm">No complaints filed yet</p>
                   </div>
-                ) : (complaints || []).map(complaint => (
+                ) : (adminComplaints || []).map(complaint => (
                   <div key={complaint.id} className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 p-5 shadow-sm mb-3">
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-bold text-[#0F172A] dark:text-white text-sm">{complaint.subject}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">{complaint.userName} · Order #{complaint.orderId} · {new Date(complaint.date).toLocaleDateString('en-IN')}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{complaint.user?.name || complaint.userName} · Order #{complaint.orderId} · {new Date(complaint.createdAt || complaint.date).toLocaleDateString('en-IN')}</p>
                       </div>
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${complaint.status === 'resolved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{complaint.status}</span>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{complaint.description}</p>
                     {complaint.status === 'pending' && (
-                      <button onClick={() => { updateComplaint(complaint.id, { status: 'resolved' }); toast.success('Complaint resolved!'); }}
+                      <button onClick={() => handleResolveComplaint(complaint.id)}
                         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 text-xs font-bold hover:bg-emerald-100 transition-colors">
                         <CheckCircle className="w-3.5 h-3.5" /> Mark Resolved
                       </button>
@@ -368,17 +414,16 @@ export function AdminInterface() {
                   <p className="text-slate-400 text-sm">Download platform data as CSV</p>
                 </div>
                 {[
-                  { label: 'Orders Report',   desc: 'All orders with status and payment details', data: orders,   file: 'orders-report.csv'   },
-                  { label: 'Users Report',    desc: 'All registered users with roles',            data: users,    file: 'users-report.csv'    },
-                  { label: 'Vendors Report',  desc: 'Vendor data including earnings and ratings', data: vendors,  file: 'vendors-report.csv'  },
-                  { label: 'Products Report', desc: 'Full product catalog with pricing',           data: products, file: 'products-report.csv' },
+                  { label: 'Orders Report',   desc: 'All orders with status and payment details', type: 'orders',   file: 'orders-report.csv'   },
+                  { label: 'Users Report',    desc: 'All registered users with roles',            type: 'users',    file: 'users-report.csv'    },
+                  { label: 'Vendors Report',  desc: 'Vendor data including earnings and ratings', type: 'vendors',  file: 'vendors-report.csv'  },
                 ].map(r => (
                   <div key={r.file} className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 p-5 shadow-sm flex items-center justify-between gap-4">
                     <div>
                       <h3 className="font-bold text-[#0F172A] dark:text-white text-sm">{r.label}</h3>
                       <p className="text-xs text-slate-400 mt-0.5">{r.desc}</p>
                     </div>
-                    <button onClick={() => exportCSV(r.data, r.file)}
+                    <button onClick={() => exportCSV(r.type, r.file)}
                       className="flex items-center gap-2 bg-[#1E3A8A] hover:bg-[#2B4FBA] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap">
                       <Download className="w-3.5 h-3.5" /> Download
                     </button>

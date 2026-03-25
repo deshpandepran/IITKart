@@ -14,7 +14,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     if (role === 'CUSTOMER' || role === 'user') dbRole = 'user';
     else if (role === 'VENDOR' || role === 'vendor') dbRole = 'vendor';
     else if (role === 'RIDER' || role === 'courier') dbRole = 'courier';
-    else if (role === 'ADMIN' || role === 'admin') dbRole = 'admin';
+    else if (role === 'ADMIN' || role === 'admin') {
+      return next(new AppError('Forbidden: System operates with exactly ONE master admin. Registration blocked.', 403));
+    }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return next(new AppError('Email already registered', 400));
@@ -62,6 +64,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || user.status === 'banned') {
       return next(new AppError('Invalid email or password', 401));
+    }
+
+    if (user.role === 'vendor' || user.role === 'VENDOR' as any) {
+      const vendor = await prisma.vendor.findUnique({ where: { userId: user.id } });
+      if (vendor && vendor.status === 'suspended') {
+        return next(new AppError('Your vendor account has been suspended. Please contact the master admin.', 403));
+      }
     }
 
     const isMatch = await authService.comparePassword(password, user.passwordHash);
