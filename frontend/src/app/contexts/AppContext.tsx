@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-export interface Product {
+import api from '@/api/axios';export interface Product {
   id: string;
   vendorId: string;
   vendorName: string;
@@ -65,6 +64,7 @@ export interface Order {
 
 export interface Vendor {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   products: Product[];
@@ -157,8 +157,8 @@ interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   updateUserCoins: (userId: string, coins: number) => void;
-  login: (email: string, password: string) => User | null;
-  register: (name: string, email: string, password: string, role: User['role'], phone?: string, address?: string) => User | null;
+  login: (email: string, password: string) => Promise<User | null>;
+  register: (name: string, email: string, password: string, role: User['role'], phone?: string, address?: string) => Promise<User | null>;
   
   orders: Order[];
   addOrder: (order: Order) => void;
@@ -302,10 +302,10 @@ const MOCK_DELIVERY_ISSUES: DeliveryIssue[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
-  const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [courierJobs, setCourierJobs] = useState<CourierJob[]>([]);
   const [courierProfiles, setCourierProfiles] = useState<CourierProfile[]>(MOCK_COURIER_PROFILES);
   const [cart, setCart] = useState<{ productId: string; quantity: number }[]>([]);
@@ -314,16 +314,80 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [deliveryIssues, setDeliveryIssues] = useState<DeliveryIssue[]>(MOCK_DELIVERY_ISSUES);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  const addProduct = (product: Product) => {
-    setProducts(prev => [...prev, product]);
+  React.useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [vendorsRes, productsRes] = await Promise.all([
+          api.get('/vendors'),
+          api.get('/vendors/products')
+        ]);
+        
+        const fetchedVendors = vendorsRes.data.data.map((v: any) => ({
+          ...v,
+          products: [] // Setup standard vendor relationships on frontend if needed
+        }));
+        
+        const fetchedProducts = productsRes.data.data.map((p: any) => ({
+          ...p,
+          vendorName: p.vendor?.name || "Unknown Vendor" // Map the nested vendor to frontend's vendorName
+        }));
+
+        setVendors(fetchedVendors);
+        setProducts(fetchedProducts);
+      } catch (error) {
+        console.error("Failed to load backend catalogs:", error);
+      }
+    };
+    
+    fetchInitialData();
+  }, []);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      api.get('/orders')
+        .then(res => setOrders(res.data.data))
+        .catch(err => console.error("Failed to load orders:", err));
+    } else {
+      setOrders([]);
+    }
+  }, [currentUser]);
+
+  const addProduct = async (product: Product) => {
+    try {
+      const response = await api.post('/vendors/me/products', {
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        description: product.description,
+        image: product.image,
+        inStock: product.inStock
+      });
+      const newProduct = { ...response.data.data, vendorName: currentUser?.name || 'My Shop' };
+      setProducts(prev => [...prev, newProduct]);
+    } catch (error) {
+      console.error("Failed to add product:", error);
+    }
   };
 
-  const removeProduct = (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
+  const removeProduct = async (productId: string) => {
+    try {
+      await api.delete(`/vendors/me/products/${productId}`);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+    } catch (error) {
+      console.error("Failed to remove product:", error);
+      // Fallback for mock IDs
+      setProducts(prev => prev.filter(p => p.id !== productId));
+    }
   };
 
-  const updateProduct = (productId: string, updates: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updates } : p));
+  const updateProduct = async (productId: string, updates: Partial<Product>) => {
+    try {
+      await api.patch(`/vendors/me/products/${productId}`, updates);
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updates } : p));
+    } catch (error) {
+      console.error("Failed to update product:", error);
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...updates } : p));
+    }
   };
 
   const updateUserCoins = (userId: string, coins: number) => {
@@ -332,57 +396,121 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addOrder = (order: Order) => {
-    setOrders(prev => [...prev, order]);
-    if (currentUser) {
-      setCurrentUser({
-        ...currentUser,
-        kartCoins: currentUser.kartCoins + order.kartCoinsEarned,
-        orderHistory: [...currentUser.orderHistory, order]
+  const addOrder = async (order: Order) => {
+    try {
+      const response = await api.post('/orders', {
+        vendorId: order.vendorId,
+        items: order.products,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: order.paymentMethod || 'Cash on Delivery'
       });
+      const newOrder = response.data.data;
+      setOrders(prev => [newOrder, ...prev]);
+      if (currentUser) {
+        setCurrentUser({
+          ...currentUser,
+          kartCoins: currentUser.kartCoins + newOrder.kartCoinsEarned,
+          orderHistory: [...(currentUser.orderHistory || []), newOrder]
+        });
+      }
+    } catch (error) {
+      console.error("Failed to place order:", error);
     }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      if (status === 'accepted') await api.patch(`/vendors/me/orders/${orderId}/accept`);
+      else if (status === 'delivered') await api.patch(`/riders/deliveries/${orderId}/delivered`);
+      else if (status === 'picked') await api.post(`/riders/deliveries/${orderId}/accept`);
+      else await api.patch(`/orders/${orderId}/status`, { status });
+      
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    }
   };
 
-  const addOrderRating = (orderId: string, rating: number, feedback: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, rating, feedback } : o));
+  const addOrderRating = async (orderId: string, rating: number, feedback: string) => {
+    try {
+      await api.patch(`/orders/${orderId}/rate`, { type: 'product', rating, feedback });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, rating, feedback } : o));
+    } catch (error) {
+      console.error(error);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, rating, feedback } : o));
+    }
   };
 
-  const assignCourier = (orderId: string, courierId: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, courierId } : o));
+  const assignCourier = async (orderId: string, courierId: string) => {
+    try {
+      await api.patch(`/orders/${orderId}/assign-courier`, { courierId });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, courierId } : o));
+    } catch (error) {
+      console.error(error);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, courierId } : o));
+    }
   };
 
   const updateOrder = (orderId: string, updates: Partial<Order>) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
   };
 
-  const updateVendor = (vendorId: string, updates: Partial<Vendor>) => {
-    setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, ...updates } : v));
+  const updateVendor = async (vendorId: string, updates: Partial<Vendor>) => {
+    try {
+      await api.patch('/vendors/me/profile', updates);
+      setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, ...updates } : v));
+    } catch (error) {
+      console.error("Failed to update vendor:", error);
+      setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, ...updates } : v));
+    }
   };
 
-  const addCourierJob = (job: CourierJob) => {
-    setCourierJobs(prev => [...prev, job]);
+  const addCourierJob = async (job: CourierJob) => {
+    try {
+      await api.post('/vendors/me/courier-jobs', job);
+      setCourierJobs(prev => [...prev, job]);
+    } catch (err) {
+      console.error(err);
+      setCourierJobs(prev => [...prev, job]);
+    }
   };
 
-  const updateCourierJob = (jobId: string, updates: Partial<CourierJob>) => {
-    setCourierJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...updates } : j));
+  const updateCourierJob = async (jobId: string, updates: Partial<CourierJob>) => {
+    try {
+      await api.patch(`/vendors/me/courier-jobs/${jobId}`, updates);
+      setCourierJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...updates } : j));
+    } catch (err) {
+      console.error(err);
+      setCourierJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...updates } : j));
+    }
   };
 
   const addCourierProfile = (profile: CourierProfile) => {
     setCourierProfiles(prev => [...prev, profile]);
   };
 
-  const updateCourierProfile = (profileId: string, updates: Partial<CourierProfile>) => {
-    setCourierProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updates } : p));
+  const updateCourierProfile = async (profileId: string, updates: Partial<CourierProfile>) => {
+    try {
+      await api.patch('/riders/profile', updates);
+      setCourierProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updates } : p));
+    } catch (err) {
+      console.error(err);
+      setCourierProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updates } : p));
+    }
   };
 
-  const updateUser = (userId: string, updates: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-    if (currentUser && currentUser.id === userId) {
-      setCurrentUser({ ...currentUser, ...updates });
+  const updateUser = async (userId: string, updates: Partial<User>) => {
+    try {
+      if (currentUser?.id === userId) await api.patch('/users/me/profile', updates);
+      
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+      if (currentUser && currentUser.id === userId) {
+        setCurrentUser({ ...currentUser, ...updates });
+      }
+    } catch (err) {
+      console.error(err);
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
     }
   };
 
@@ -424,42 +552,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCart([]);
   };
 
-  const login = (email: string, password: string) => {
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const { user, accessToken } = response.data.data;
+      localStorage.setItem('token', accessToken);
       setCurrentUser(user);
+      return user;
+    } catch (error) {
+      console.error("Login failed:", error);
+      return null;
     }
-    return user || null;
   };
 
-  const register = (name: string, email: string, password: string, role: User['role'], phone?: string, address?: string) => {
-    const newUser: User = {
-      id: `u${users.length + 1}`,
-      name,
-      email,
-      password,
-      role,
-      kartCoins: 0,
-      orderHistory: [],
-      phone,
-      address,
-      favorites: []
-    };
-    setUsers(prev => [...prev, newUser]);
-    setCurrentUser(newUser);
-    return newUser;
+  const register = async (name: string, email: string, password: string, role: User['role'], phone?: string, address?: string) => {
+    try {
+      const response = await api.post('/auth/register', { name, email, password, role, phone, address });
+      const { user, accessToken } = response.data.data;
+      localStorage.setItem('token', accessToken);
+      setCurrentUser(user);
+      return user;
+    } catch (error) {
+      console.error("Registration failed:", error);
+      return null;
+    }
   };
 
-  const addComplaint = (complaint: Complaint) => {
-    setComplaints(prev => [...prev, complaint]);
+  const addComplaint = async (complaint: Complaint) => {
+    try {
+      if (complaint.orderId) await api.post(`/orders/${complaint.orderId}/complaint`, complaint);
+      setComplaints(prev => [...prev, complaint]);
+    } catch (err) {
+      console.error(err);
+      setComplaints(prev => [...prev, complaint]);
+    }
   };
 
   const updateComplaint = (complaintId: string, updates: Partial<Complaint>) => {
     setComplaints(prev => prev.map(c => c.id === complaintId ? { ...c, ...updates } : c));
   };
 
-  const addDeliveryIssue = (issue: DeliveryIssue) => {
-    setDeliveryIssues(prev => [...prev, issue]);
+  const addDeliveryIssue = async (issue: DeliveryIssue) => {
+    try {
+      await api.post('/riders/issues', issue);
+      setDeliveryIssues(prev => [...prev, issue]);
+    } catch (err) {
+      console.error(err);
+      setDeliveryIssues(prev => [...prev, issue]);
+    }
   };
 
   const updateDeliveryIssue = (issueId: string, updates: Partial<DeliveryIssue>) => {

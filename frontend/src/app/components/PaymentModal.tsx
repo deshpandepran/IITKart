@@ -66,7 +66,15 @@ export function PaymentModal({ open, onOpenChange, order, onPaymentSuccess }: Pa
     setPaymentStep('select'); setSelectedMethod('upi'); setReceipt('');
   };
 
-  const handleClose = () => { if (paymentStep !== 'success') { setPaymentStep('select'); setSelectedMethod('upi'); } onOpenChange(false); };
+  const handleClose = () => { 
+    if (paymentStep === 'success') { 
+      handleCompleteOrder(); 
+    } else { 
+      setPaymentStep('select'); 
+      setSelectedMethod('upi'); 
+      onOpenChange(false); 
+    } 
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

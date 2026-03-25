@@ -70,7 +70,7 @@ export function AuthPage() {
     // mock delay (keep if you want UI spinner)
     await new Promise((r) => setTimeout(r, 600));
 
-    const user = login(loginData.email, loginData.password);
+    const user = await login(loginData.email, loginData.password);
 
     setLoading(false);
 
@@ -98,7 +98,7 @@ export function AuthPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
 
-    const user = register(
+    const user = await register(
       registerData.name,
       registerData.email,
       registerData.password,

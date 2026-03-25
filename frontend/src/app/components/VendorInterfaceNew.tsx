@@ -81,8 +81,8 @@ export function VendorInterface() {
   if (!currentUser || currentUser.role !== 'VENDOR') return null;
 
   const [activeTab, setActiveTab] = useState('orders');
-  const vendorId = currentUser.id;
-  const vendor   = vendors.find(v => v.id === vendorId);
+  const vendor   = vendors.find(v => v.userId === currentUser.id);
+  const vendorId = vendor?.id || currentUser.id;
   const vendorProducts  = products.filter(p => p.vendorId === vendorId);
   const vendorOrders    = orders.filter(o => o.vendorId === vendorId);
   const activeOrders    = vendorOrders.filter(o => ['pending', 'accepted', 'picked'].includes(o.status));
