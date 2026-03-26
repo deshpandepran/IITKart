@@ -95,8 +95,6 @@ export function VendorInterface() {
     if (authLoading) return;
     if (!currentUser || (currentUser.role !== 'VENDOR' && currentUser.role !== 'vendor')) navigate('/auth');
   }, [currentUser, authLoading, navigate]);
-  if (authLoading) return null;
-  if (!currentUser || (currentUser.role !== 'VENDOR' && currentUser.role !== 'vendor')) return null;
 
   const getImageUrl = (url?: string | null) => {
     if (!url) return '';
@@ -105,8 +103,8 @@ export function VendorInterface() {
   };
 
   const [activeTab, setActiveTab] = useState('orders');
-  const vendor   = vendors.find(v => v.userId === currentUser.id);
-  const vendorId = vendor?.id || currentUser.id;
+  const vendor   = vendors.find(v => v.userId === currentUser?.id);
+  const vendorId = vendor?.id || currentUser?.id;
   const vendorProducts  = products.filter(p => p.vendorId === vendorId);
   const vendorOrders    = orders; // API natively pre-filters to the authenticated Vendor's scope
   const activeOrders    = vendorOrders.filter(o => ['pending', 'accepted', 'picked'].includes(o.status));
@@ -145,6 +143,9 @@ export function VendorInterface() {
       setIsSavingSettings(false);
     }
   };
+
+  if (authLoading) return null;
+  if (!currentUser || (currentUser.role !== 'VENDOR' && currentUser.role !== 'vendor')) return null;
 
   const handleAddProduct = () => {
     if (!productForm.name.trim() || !productForm.price) { toast.error('Name and price are required'); return; }
