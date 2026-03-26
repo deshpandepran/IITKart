@@ -46,12 +46,13 @@ export function CourierInterface() {
   // Initial Data Fetch
   const fetchAllData = async () => {
     try {
+      const cacheBust = `?t=${Date.now()}`;
       const [pendRes, actRes, histRes, earnRes, feedRes] = await Promise.all([
-        api.get('/riders/deliveries/pending').catch(e => ({ data: { data: [] }})),
-        api.get('/riders/deliveries/active').catch(e => ({ data: { data: [] }})),
-        api.get('/riders/deliveries/history').catch(e => ({ data: { data: [] }})),
-        api.get('/riders/earnings').catch(e => ({ data: { data: null }})),
-        api.get('/riders/feedbacks').catch(e => ({ data: { data: { feedbacks: [], avgRating: "5.0" } } }))
+        api.get('/riders/deliveries/pending' + cacheBust).catch(e => ({ data: { data: [] }})),
+        api.get('/riders/deliveries/active' + cacheBust).catch(e => ({ data: { data: [] }})),
+        api.get('/riders/deliveries/history' + cacheBust).catch(e => ({ data: { data: [] }})),
+        api.get('/riders/earnings' + cacheBust).catch(e => ({ data: { data: null }})),
+        api.get('/riders/feedbacks' + cacheBust).catch(e => ({ data: { data: { feedbacks: [], avgRating: "5.0" } } }))
       ]);
       setPendingOrders(pendRes?.data?.data || []);
       setActiveDeliveries(actRes?.data?.data || []);

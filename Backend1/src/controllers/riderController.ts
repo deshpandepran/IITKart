@@ -15,7 +15,13 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
       create: { userId: req.user.id },
       update: {}
     });
-    res.status(200).json({ success: true, data: profile });
+
+    const reviews = await prisma.order.findMany({
+      where: { courierId: req.user.id, courierRating: { not: null } },
+      select: { id: true, courierRating: true, courierFeedback: true, user: { select: { name: true } }, createdAt: true }
+    });
+
+    res.status(200).json({ success: true, data: { ...profile, reviews } });
   } catch (error) { next(error); }
 };
 
@@ -113,7 +119,7 @@ export const getActiveDeliveries = async (req: AuthRequest, res: Response, next:
   try {
     const orders = await prisma.order.findMany({
       where: { courierId: req.user.id, status: 'picked' },
-      include: { vendor: { select: { name: true, location: true } } },
+      include: { vendor: { select: { name: true, location: true } }, user: { select: { name: true, phone: true } } },
       orderBy: { updatedAt: 'desc' }
     });
     

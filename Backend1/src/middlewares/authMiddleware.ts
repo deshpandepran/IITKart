@@ -43,7 +43,9 @@ export const requireRole = (...roles: string[]) => {
     if (!req.user) {
       return next(new AppError('You do not have permission to perform this action', 403));
     }
-    const userRole = req.user.role.toLowerCase() === 'rider' ? 'courier' : req.user.role.toLowerCase();
+    let userRole = req.user.role.toLowerCase();
+    if (userRole === 'rider') userRole = 'courier';
+    if (userRole === 'customer') userRole = 'user';
     
     if (!roles.includes(userRole)) {
       return next(new AppError('You do not have permission to perform this action', 403));

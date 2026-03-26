@@ -124,7 +124,11 @@ export const getVendorOrders = async (req: AuthRequest, res: Response, next: Nex
     const orders = await prisma.order.findMany({
       where: { vendorId: vendor!.id },
       orderBy: { createdAt: 'desc' },
-      include: { items: { include: { product: true } }, user: { select: { name: true, phone: true } } }
+      include: { 
+        items: { include: { product: true } }, 
+        user: { select: { name: true, phone: true } },
+        courier: { select: { name: true, phone: true } }
+      }
     });
     res.status(200).json({ success: true, data: orders });
   } catch (error) { next(error); }
@@ -198,5 +202,28 @@ export const updateCourierJob = async (req: AuthRequest, res: Response, next: Ne
       data: req.body
     });
     res.status(200).json({ success: true, data: job });
+  } catch (error) { next(error); }
+};
+
+export const getDeliveryIssues = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const vendor = await prisma.vendor.findUnique({ where: { userId: req.user.id } });
+    if (!vendor) return next(new AppError('Vendor not found', 404));
+
+    const issues = await prisma.deliveryIssue.findMany({
+      where: { order: { vendorId: vendor.id } },
+      include: {
+        order: {
+          select: {
+            id: true,
+            status: true,
+            courier: { select: { name: true, phone: true } }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ success: true, data: issues });
   } catch (error) { next(error); }
 };

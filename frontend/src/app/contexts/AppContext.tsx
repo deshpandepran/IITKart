@@ -608,14 +608,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshOrders = async () => {
     if (!currentUser) return;
+    const cacheBust = `?t=${Date.now()}`;
     if (currentUser.role === 'CUSTOMER' || currentUser.role === 'user') {
       try {
-        const res = await api.get('/users/orders');
+        const res = await api.get('/users/orders' + cacheBust);
         setOrders(res.data.data);
       } catch(e) {}
     } else if (currentUser.role === 'VENDOR' || currentUser.role === 'vendor') {
       try {
-        const res = await api.get('/vendors/me/orders');
+        const res = await api.get('/vendors/me/orders' + cacheBust);
         setOrders(res.data.data);
       } catch(e) {}
     }
