@@ -249,6 +249,12 @@ export function CourierInterface() {
                             <p className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 font-semibold"><Store className="w-4 h-4 text-[#1E3A8A]" /> Pickup: {order.vendor?.name}</p>
                             <p className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><MapPin className="w-4 h-4 text-[#F97316]" /> Drop: {order.deliveryAddress}</p>
                           </div>
+
+                          <div className="mt-4 bg-white dark:bg-[#0F1E3A] p-3 rounded-xl border border-purple-100 dark:border-purple-800/30">
+                            <p className="font-bold text-[#1E3A8A] dark:text-blue-400 text-xs mb-1.5 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Customer Details</p>
+                            <p className="text-slate-700 dark:text-slate-200 text-sm font-bold">{order.user?.name || 'Customer'}</p>
+                            {order.user?.phone && <p className="text-slate-500 text-xs flex items-center gap-1.5 mt-1 font-medium"><Phone className="w-3.5 h-3.5" /> {order.user.phone}</p>}
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">₹{order.estimatedEarnings}</p>

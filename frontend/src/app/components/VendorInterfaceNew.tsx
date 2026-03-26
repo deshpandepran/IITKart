@@ -185,6 +185,18 @@ export function VendorInterface() {
                           <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${order.status === 'picked' ? 'bg-blue-100 text-blue-700' : order.status === 'accepted' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{order.status}</span>
                         </div>
                         <p className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-300 mb-1">{(order.items || order.products || []).length} items · ₹{order.total + 30}</p>
+                        
+                        <div className="bg-white dark:bg-[#0F1E3A] rounded-lg p-2.5 text-xs mb-3 border border-blue-50 dark:border-blue-900/10">
+                          <p className="font-bold text-slate-600 dark:text-slate-300 mb-1.5">Order Items:</p>
+                          <ul className="text-slate-500 dark:text-slate-400 space-y-1">
+                            {(order.items || order.products || []).map((item: any, idx: number) => (
+                              <li key={idx} className="flex justify-between">
+                                <span><span className="font-semibold">{item.quantity || 1}x</span> {item.product?.name || item.name || 'Item'}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
                         <p className="text-xs text-slate-400 flex items-center gap-1 mb-3"><MapPin className="w-3 h-3" />{order.deliveryAddress}</p>
                         {order.courierId && (
                           <div className="bg-white dark:bg-[#0F1E3A] rounded-lg p-3 text-xs mb-3 border border-blue-100 dark:border-blue-900/20">
