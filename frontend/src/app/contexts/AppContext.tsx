@@ -749,11 +749,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-<<<<<<< Updated upstream
   const logout = () => {
     try { localStorage.removeItem('token'); } catch {}
     setCurrentUser(null);
-=======
+  };
+
   const resendRegistrationOtp = async (userId: string) => {
     try {
       await api.post('/auth/resend-otp', { userId });
@@ -792,7 +792,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error("Reset password failed:", error);
       return false;
     }
->>>>>>> Stashed changes
   };
 
   const addComplaint = async (complaint: Complaint) => {
