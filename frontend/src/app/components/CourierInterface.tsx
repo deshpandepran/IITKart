@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 import { useApp } from '@/app/contexts/AppContext';
 import api from '@/api/axios';
 import { Header } from '@/app/components/Header';
@@ -24,6 +25,8 @@ function MetricCard({ label, value, icon: Icon, colorClass }: { label: string; v
     </div>
   );
 }
+
+const phoneSchema = z.string().length(10, "Phone number must be 10 digits").regex(/^\d+$/, "Phone number must be numeric");
 
 export function CourierInterface() {
   const navigate = useNavigate();
@@ -105,9 +108,18 @@ export function CourierInterface() {
     phone: currentUser?.phone || '' 
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const handleSaveSettings = async () => {
     if (!currentUser) return;
+
+    const validation = phoneSchema.safeParse(settingsData.phone);
+    if (!validation.success) {
+      setPhoneError(validation.error.issues[0].message);
+      return;
+    }
+    setPhoneError(null);
+
     setIsSavingSettings(true);
     try {
       await updateUser(currentUser.id, {
@@ -383,9 +395,18 @@ export function CourierInterface() {
                       <div key={f.field} className="space-y-1">
                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" />{f.label}</Label>
                         <input type={f.type} value={(settingsData as any)[f.field]}
-                          onChange={(e) => setSettingsData({ ...settingsData, [f.field]: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (f.field === 'phone') {
+                              if (val && !/^\d+$/.test(val)) return;
+                              if (val.length > 10) return;
+                              setPhoneError(null);
+                            }
+                            setSettingsData({ ...settingsData, [f.field]: val });
+                          }}
                           disabled={f.field === 'email'}
-                          className="w-full h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border border-blue-100 dark:border-blue-900/30 rounded-xl px-3.5 text-sm focus:outline-none focus:border-[#1E3A8A] disabled:opacity-60 disabled:cursor-not-allowed" />
+                          className={`w-full h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border rounded-xl px-3.5 text-sm focus:outline-none focus:border-[#1E3A8A] disabled:opacity-60 disabled:cursor-not-allowed ${f.field === 'phone' && phoneError ? 'border-red-500' : 'border-blue-100 dark:border-blue-900/30'}`} />
+                        {f.field === 'phone' && phoneError && <p className="text-[10px] text-red-500 mt-1 font-semibold">{phoneError}</p>}
                       </div>
                     );
                   })}
