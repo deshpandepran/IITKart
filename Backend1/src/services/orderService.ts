@@ -34,8 +34,14 @@ export const orderService = {
       });
 
       if (!existingTx) {
-        // Calculate vendor commission (90% of total)
-        const vendorCommission = order.total * 0.90;
+        // Calculate courier earnings
+        let courierEarnings = 0;
+        if (order.courierId) {
+          courierEarnings = orderService.calculateCourierEarnings(order.total);
+        }
+
+        // Vendor gets the remaining amount
+        const vendorEarnings = order.total - courierEarnings;
 
         await prisma.$transaction(async (tx) => {
           // Record earning transaction
@@ -43,7 +49,7 @@ export const orderService = {
             data: {
               vendorId: order.vendorId,
               orderId: order.id,
-              amount: vendorCommission
+              amount: vendorEarnings
             }
           });
 
@@ -52,22 +58,19 @@ export const orderService = {
             where: { id: order.vendorId },
             data: {
               totalOrders: { increment: 1 },
-              totalEarnings: { increment: vendorCommission }
+              totalEarnings: { increment: vendorEarnings }
             }
           });
-        });
-      }
 
-      // Courier earnings
-      if (order.courierId) {
-        // Find existing courier profile to ensure no duplicate tracking if possible, 
-        // but relying on controller idempotency check is also effective.
-        const earnings = orderService.calculateCourierEarnings(order.total);
-        await prisma.courierProfile.update({
-          where: { userId: order.courierId },
-          data: {
-            totalDeliveries: { increment: 1 },
-            totalEarnings: { increment: earnings }
+          // Courier earnings update
+          if (order.courierId) {
+            await tx.courierProfile.update({
+              where: { userId: order.courierId },
+              data: {
+                totalDeliveries: { increment: 1 },
+                totalEarnings: { increment: courierEarnings }
+              }
+            });
           }
         });
       }

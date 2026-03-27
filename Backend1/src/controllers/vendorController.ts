@@ -7,7 +7,7 @@ export const getVendors = async (req: any, res: Response, next: NextFunction) =>
   try {
     const vendors = await prisma.vendor.findMany({
       where: { status: 'active' },
-      select: { id: true, userId: true, name: true, location: true, availability: true, rating: true, status: true, totalOrders: true, products: true }
+      select: { id: true, userId: true, name: true, location: true, availability: true, rating: true, status: true, totalOrders: true, totalEarnings: true, products: true }
     });
     res.status(200).json({ success: true, data: vendors });
   } catch (error) { next(error); }
