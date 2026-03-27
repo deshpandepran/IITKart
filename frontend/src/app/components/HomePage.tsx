@@ -39,7 +39,7 @@ const roles = [
     emoji: '🏪',
   },
   {
-    title: 'Delivery Partner',
+    title: 'Rider',
     description: 'Accept deliveries, earn money, and build your campus rider profile.',
     icon: Truck,
     path: '/courier',
@@ -185,7 +185,7 @@ export function HomePage() {
             {[
               { value: orders, suffix: '+', label: 'Daily Orders' },
               { value: vendors, suffix: '', label: 'Campus Vendors' },
-              { value: riders, suffix: '+', label: 'Delivery Partners' },
+              { value: riders, suffix: '+', label: 'Riders' },
             ].map(stat => (
               <div key={stat.label} className="text-center">
                 <div
@@ -212,7 +212,7 @@ export function HomePage() {
               Choose your role
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-base max-w-lg mx-auto">
-              IITKart brings together students, shops, and delivery partners on one campus platform.
+              IITKart brings together students, shops, and riders on one campus platform.
             </p>
           </div>
 

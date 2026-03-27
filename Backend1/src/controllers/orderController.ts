@@ -80,6 +80,17 @@ export const getOrderById = async (req: AuthRequest, res: Response, next: NextFu
 export const updateOrderStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status } = req.body;
+    
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: req.params.id }
+    });
+    if (!existingOrder) return next(new AppError('Order not found', 404));
+
+    // Idempotency check: don't process if status is already the same
+    if (existingOrder.status === status) {
+      return res.status(200).json({ success: true, data: existingOrder });
+    }
+
     const order = await prisma.order.update({
       where: { id: req.params.id },
       data: { status }

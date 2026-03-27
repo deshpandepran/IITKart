@@ -368,32 +368,6 @@ export function AuthPage() {
                   </>
                 )}
               </button>
-
-              {/* Demo creds */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
-                <p className="text-xs font-bold text-[#1E3A8A] dark:text-blue-300 mb-2 uppercase tracking-wider">Demo Credentials</p>
-                <div className="space-y-1">
-                  {[
-                    ['Customer', 'rahul@iitk.ac.in'],
-                    ['Vendor', 'amul@iitk.ac.in'],
-                    ['Rider', 'ravi@iitk.ac.in'],
-                    ['Admin', 'admin@iitk.ac.in'],
-                  ].map(([role, email]) => (
-                    <button
-                      key={email}
-                      type="button"
-                      onClick={() => setLoginData({ email, password: 'password123' })}
-                      className="flex justify-between items-center w-full text-xs text-slate-600 dark:text-slate-400 hover:text-[#1E3A8A] dark:hover:text-blue-300 py-0.5 transition-colors"
-                    >
-                      <span className="font-semibold">{role}</span>
-                      <span className="font-mono opacity-70">{email}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">
-                  Password: <span className="font-mono">password123</span>
-                </p>
-              </div>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">

@@ -113,6 +113,7 @@ model Vendor {
   products    Product[]
   orders      Order[]
   courierJobs CourierJob[]
+  earningsTransactions EarningsTransaction[]
 }
 
 model Product {
@@ -174,6 +175,7 @@ model Order {
   payment        Payment?
   complaints     Complaint[]
   deliveryIssues DeliveryIssue[]
+  earningsTransaction EarningsTransaction?
 }
 
 model OrderItem {
@@ -276,4 +278,15 @@ model PendingUser {
   otp          String
   otpExpiry    DateTime
   createdAt    DateTime @default(now())
+}
+
+model EarningsTransaction {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount      Float
+  status      String   @default("completed")
+  createdAt   DateTime @default(now())
 }

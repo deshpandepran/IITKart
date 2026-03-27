@@ -24,28 +24,56 @@ export const orderService = {
     return [...vendorIds][0];
   },
   processOrderDelivery: async (orderId: string): Promise<void> => {
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new AppError('Order not found', 404);
-    
-    // update vendor stats
-    await prisma.vendor.update({
-      where: { id: order.vendorId },
-      data: {
-        totalOrders: { increment: 1 },
-        totalEarnings: { increment: order.total }
-      }
-    });
-
-    // Courier earnings
-    if (order.courierId) {
-      const earnings = orderService.calculateCourierEarnings(order.total);
-      await prisma.courierProfile.update({
-        where: { userId: order.courierId },
-        data: {
-          totalDeliveries: { increment: 1 },
-          totalEarnings: { increment: earnings }
-        }
+    try {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) throw new AppError('Order not found', 404);
+      
+      // Idempotency check: verify if earnings were already added
+      const existingTx = await prisma.earningsTransaction.findUnique({
+        where: { orderId: order.id }
       });
+
+      if (!existingTx) {
+        // Calculate vendor commission (90% of total)
+        const vendorCommission = order.total * 0.90;
+
+        await prisma.$transaction(async (tx) => {
+          // Record earning transaction
+          await tx.earningsTransaction.create({
+            data: {
+              vendorId: order.vendorId,
+              orderId: order.id,
+              amount: vendorCommission
+            }
+          });
+
+          // update vendor stats
+          await tx.vendor.update({
+            where: { id: order.vendorId },
+            data: {
+              totalOrders: { increment: 1 },
+              totalEarnings: { increment: vendorCommission }
+            }
+          });
+        });
+      }
+
+      // Courier earnings
+      if (order.courierId) {
+        // Find existing courier profile to ensure no duplicate tracking if possible, 
+        // but relying on controller idempotency check is also effective.
+        const earnings = orderService.calculateCourierEarnings(order.total);
+        await prisma.courierProfile.update({
+          where: { userId: order.courierId },
+          data: {
+            totalDeliveries: { increment: 1 },
+            totalEarnings: { increment: earnings }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to process order delivery earnings:', error);
+      throw error; // Let the calling controller handle the error response
     }
   }
 };
