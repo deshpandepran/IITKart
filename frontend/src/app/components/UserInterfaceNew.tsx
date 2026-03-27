@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { z } from 'zod';
 import { useApp } from '@/app/contexts/AppContext';
 import { Header } from '@/app/components/Header';
 import { Sidebar, SidebarItem } from '@/app/components/Sidebar';
@@ -34,8 +33,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-const phoneSchema = z.string().length(10, "Phone number must be 10 digits").regex(/^\d+$/, "Phone number must be numeric");
-
 const NAV_ITEMS: SidebarItem[] = [
   { id: 'browse',       label: 'Browse',       icon: Search   },
   { id: 'orders',       label: 'My Orders',    icon: Package  },
@@ -65,7 +62,6 @@ export function UserInterface() {
     name: currentUser?.name || '', email: currentUser?.email || '',
     phone: currentUser?.phone || '', address: currentUser?.address || '', photo: currentUser?.photo || ''
   });
-  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const [feedbackDialog, setFeedbackDialog] = useState<{ open: boolean; orderId: string; type: 'product' | 'courier' | 'vendor' }>({ open: false, orderId: '', type: 'product' });
   const [rating, setRating]   = useState(5);
@@ -616,30 +612,14 @@ export function UserInterface() {
                       <div key={f.field} className="space-y-1">
                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" />{f.label}</Label>
                         <Input type={f.type} placeholder={f.placeholder} value={(settingsData as any)[f.field]}
-                          onChange={e => {
-                            const val = e.target.value;
-                            if (f.field === 'phone') {
-                              if (val && !/^\d+$/.test(val)) return;
-                              if (val.length > 10) return;
-                              setPhoneError(null);
-                            }
-                            setSettingsData({ ...settingsData, [f.field]: val });
-                          }}
-                          className={`h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border rounded-xl focus:border-[#1E3A8A] ${f.field === 'phone' && phoneError ? 'border-red-500' : 'border-blue-100 dark:border-blue-900/30'}`} />
-                        {f.field === 'phone' && phoneError && <p className="text-[10px] text-red-500 mt-1 font-semibold">{phoneError}</p>}
+                          onChange={e => setSettingsData({ ...settingsData, [f.field]: e.target.value })}
+                          className="h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 rounded-xl focus:border-[#1E3A8A]" />
                       </div>
                     );
                   })}
                   <div className="flex gap-3 pt-2">
                     <button onClick={async () => { 
                       try {
-                        const validation = phoneSchema.safeParse(settingsData.phone);
-                        if (!validation.success) {
-                          setPhoneError(validation.error.issues[0].message);
-                          return;
-                        }
-                        setPhoneError(null);
-
                         let photoRef = settingsData.photo;
                         // Handle FormData if file was selected
                         if ((settingsData as any).photoFile) {

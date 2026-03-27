@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { z } from 'zod';
 import { useApp } from '@/app/contexts/AppContext';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -22,8 +21,6 @@ import { ForgotPassword } from './ForgotPassword';
 
 type AppRole = 'CUSTOMER' | 'VENDOR' | 'RIDER' | 'ADMIN';
 
-const phoneSchema = z.string().length(10, "Phone number must be 10 digits").regex(/^\d+$/, "Phone number must be numeric");
-
 export function AuthPage() {
   const navigate = useNavigate();
   const { login, register } = useApp();
@@ -34,7 +31,6 @@ export function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
 
@@ -92,13 +88,6 @@ export function AuthPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const validation = phoneSchema.safeParse(registerData.phone);
-    if (!validation.success) {
-      setPhoneError(validation.error.issues[0].message);
-      return;
-    }
-    setPhoneError(null);
 
     if (registerData.password !== registerData.confirmPassword) {
       toast.error('Passwords do not match');
@@ -383,16 +372,9 @@ export function AuthPage() {
                       type="tel"
                       placeholder="10-digit number"
                       value={registerData.phone}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val && !/^\d+$/.test(val)) return;
-                        if (val.length > 10) return;
-                        setRegisterData({ ...registerData, phone: val });
-                        setPhoneError(null);
-                      }}
-                      className={`pl-10 h-11 bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 focus:border-[#1E3A8A] rounded-xl ${phoneError ? 'border-red-500' : ''}`}
+                      onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                      className="pl-10 h-11 bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 focus:border-[#1E3A8A] rounded-xl"
                     />
-                    {phoneError && <p className="text-[10px] text-red-500 mt-1 font-semibold">{phoneError}</p>}
                   </div>
                 </div>
 
