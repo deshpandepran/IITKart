@@ -49,7 +49,7 @@ export function PaymentModal({ open, onOpenChange, order, onPaymentSuccess }: Pa
   if (!order) return null;
 
   const itemTotal = order.total;
-  const deliveryCharges = 30;
+  const deliveryCharges = order.kartCoinsUsed ? 0 : 30;
   const totalAmount = itemTotal + deliveryCharges;
 
   const paymentMethods = [
@@ -161,15 +161,39 @@ export function PaymentModal({ open, onOpenChange, order, onPaymentSuccess }: Pa
     }
   };
 
-  const initiateCODOrder = () => {
+  const initiateCODOrder = async () => {
     setPaymentStep('processing');
-    setTimeout(() => {
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      
+      const response = await fetch(`${apiUrl}/payments/confirm-cod`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ orderId: order.id })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to confirm COD order');
+      }
+
       const paymentID = `COD${Date.now()}`;
       const receiptText = `\n╔════════════════════════════════╗\n║       ORDER RECEIPT           ║\n║          IITKart              ║\n╠════════════════════════════════╣\n║ Order: ${order.id}\n║ Reference: ${paymentID}\n║ Date: ${new Date().toLocaleString('en-IN')}\n║\n║ Item Total:     ₹${itemTotal.toFixed(2)}\n║ Delivery:       ₹${deliveryCharges.toFixed(2)}\n║ ────────────────────────────\n║ TOTAL:          ₹${totalAmount.toFixed(2)}\n║\n║ Method: Cash on Delivery\n║ Status: PENDING (COD)\n║\n║ Address: ${order.deliveryAddress}\n╚════════════════════════════════╝\n\nThank you for ordering with IITKart!`;
       setReceipt(receiptText);
       setPaymentStep('success');
       toast.success('Order placed! Pay on delivery');
-    }, 1800);
+    } catch (error: any) {
+      console.error('COD error:', error);
+      toast.error(error.message || 'Failed to place order');
+      setPaymentStep('select');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const initiatePayment = () => {
@@ -193,6 +217,9 @@ export function PaymentModal({ open, onOpenChange, order, onPaymentSuccess }: Pa
   const handleCompleteOrder = () => {
     const methodName = selectedMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery';
     onPaymentSuccess(methodName, totalAmount);
+    if (order?.kartCoinsUsed) {
+      toast.info(`30 Kart Coins redeemed for free delivery.`);
+    }
     setPaymentStep('select'); setSelectedMethod('upi'); setReceipt('');
   };
 

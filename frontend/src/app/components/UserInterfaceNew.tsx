@@ -55,6 +55,7 @@ export function UserInterface() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [shopFilter, setShopFilter]   = useState<'all' | 'bestsellers' | 'favorites'>('all');
   const [showCart, setShowCart]       = useState(false);
+  const [useKartCoins, setUseKartCoins] = useState(false);
   const [location, setLocation]       = useState(currentUser?.address || '');
   const [selectedVendor, setSelectedVendor] = useState('all');
   const [favorites, setFavorites]     = useState<string[]>(currentUser?.favorites || []);
@@ -123,7 +124,7 @@ export function UserInterface() {
   const userOrders    = currentUser ? orders.filter(o => o.userId === currentUser.id) : [];
   const pendingOrders = userOrders.filter(o => o.status !== 'delivered').length;
   const cartTotal      = cart.reduce((s, i) => s + (products.find(p => p.id === i.productId)?.price || 0) * i.quantity, 0);
-  const deliveryCharges = 30;
+  const deliveryCharges = useKartCoins ? 0 : 30;
   const orderTotal     = cartTotal + deliveryCharges;
   const cartCount      = cart.reduce((s, i) => s + i.quantity, 0);
 
@@ -162,7 +163,8 @@ export function UserInterface() {
           vendorId: products.find(p => p.id === cart[0].productId)?.vendorId || '',
           items: cart.map(i => ({ productId: i.productId, quantity: i.quantity })),
           deliveryAddress: location,
-          paymentMethod: 'UPI'
+          paymentMethod: 'UPI',
+          useKartCoins
         })
       });
 
@@ -581,7 +583,7 @@ export function UserInterface() {
                       <span className="text-6xl font-extrabold" style={{ fontFamily: 'Syne, sans-serif' }}>{currentUser.kartCoins}</span>
                       <Coins className="w-10 h-10 text-[#F97316] mb-2" />
                     </div>
-                    <p className="text-white/50 text-sm">≈ ₹{(currentUser.kartCoins * 0.1).toFixed(2)} in rewards</p>
+                    <p className="text-white/50 text-sm">≈ ₹{(currentUser.kartCoins).toFixed(2)} in rewards</p>
                   </div>
                 </div>
                 <div className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm p-5">
@@ -606,7 +608,7 @@ export function UserInterface() {
                   <ul className="space-y-1.5 text-sm text-slate-600 dark:text-slate-400">
                     <li className="flex items-center gap-2"><span className="text-[#F97316]">•</span> Earn 10% of order value as Kart Coins</li>
                     <li className="flex items-center gap-2"><span className="text-[#F97316]">•</span> Use Kart Coins for discounts on future orders</li>
-                    <li className="flex items-center gap-2"><span className="text-[#F97316]">•</span> 10 Kart Coins = ₹1 discount</li>
+                    <li className="flex items-center gap-2"><span className="text-[#F97316]">•</span> 1 Kart Coin = ₹1 discount</li>
                   </ul>
                 </div>
               </div>
@@ -783,9 +785,33 @@ export function UserInterface() {
             </div>
             {cart.length > 0 && (
               <div className="p-4 border-t border-blue-100 dark:border-blue-900/30 space-y-3">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800/30">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-bold text-[#1E3A8A] dark:text-blue-300 flex items-center gap-1.5"><Coins className="w-4 h-4 text-[#F97316]"/> Kart Coins</span>
+                    <span className="text-xs font-bold bg-[#1E3A8A] text-white px-2 py-0.5 rounded-full">{currentUser.kartCoins} Available</span>
+                  </div>
+                  <label className={`flex items-center gap-2 mt-2 cursor-pointer ${currentUser.kartCoins < 30 ? 'opacity-50' : ''}`}>
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded text-[#1E3A8A] focus:ring-[#1E3A8A]" 
+                      checked={useKartCoins}
+                      onChange={(e) => setUseKartCoins(e.target.checked)}
+                      disabled={currentUser.kartCoins < 30}
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300 font-semibold">Use 30 Kart Coins for free delivery</span>
+                  </label>
+                  {currentUser.kartCoins < 30 && (
+                    <p className="text-[10px] text-red-500 mt-1 ml-6">You need {30 - currentUser.kartCoins} more coins to unlock free delivery.</p>
+                  )}
+                </div>
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between text-slate-500"><span>Item Total</span><span>₹{cartTotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-slate-500"><span>Delivery</span><span>₹{deliveryCharges.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Delivery</span>
+                    <span className={useKartCoins ? "text-emerald-500 font-bold" : ""}>
+                      {useKartCoins ? "FREE (₹0.00)" : `₹${deliveryCharges.toFixed(2)}`}
+                    </span>
+                  </div>
                   <div className="flex justify-between font-extrabold text-[#0F172A] dark:text-white text-base pt-1.5 border-t border-blue-50 dark:border-blue-900/20">
                     <span>Total</span><span className="text-[#1E3A8A] dark:text-blue-300">₹{orderTotal.toFixed(2)}</span>
                   </div>

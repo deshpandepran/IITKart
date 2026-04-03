@@ -65,10 +65,60 @@ export const verifyPayment = async (req: AuthRequest, res: Response, next: NextF
 
     await prisma.order.update({
       where: { id: orderId },
-      data: { paymentStatus: 'success' }
+      data: { 
+        paymentStatus: 'success',
+        coinsProcessed: true
+      }
     });
 
+    if (!order.coinsProcessed) {
+      await prisma.user.update({
+        where: { id: order.userId },
+        data: {
+          kartCoins: {
+            increment: order.kartCoinsEarned - order.kartCoinsUsed
+          }
+        }
+      });
+    }
+
     res.status(200).json({ success: true, message: 'Payment verified successfully' });
+  } catch (error) { next(error); }
+};
+
+export const confirmCodPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { orderId } = req.body;
+
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return next(new AppError('Order not found', 404));
+    if (order.userId !== req.user.id) return next(new AppError('Unauthorized', 403));
+
+    await prisma.payment.updateMany({
+      where: { orderId },
+      data: { method: 'COD' }
+    });
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { 
+        paymentMethod: 'COD',
+        coinsProcessed: true
+      }
+    });
+
+    if (!order.coinsProcessed) {
+      await prisma.user.update({
+        where: { id: order.userId },
+        data: {
+          kartCoins: {
+            increment: order.kartCoinsEarned - order.kartCoinsUsed
+          }
+        }
+      });
+    }
+
+    res.status(200).json({ success: true, message: 'COD payment confirmed successfully' });
   } catch (error) { next(error); }
 };
 

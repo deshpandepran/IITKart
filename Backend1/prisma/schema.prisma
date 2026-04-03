@@ -159,6 +159,8 @@ model Order {
   total           Float
   status          OrderStatus   @default(pending)
   kartCoinsEarned Int           @default(0)
+  kartCoinsUsed   Int           @default(0)
+  coinsProcessed  Boolean       @default(false)
   deliveryAddress String
   paymentStatus   PaymentStatus @default(pending)
   paymentMethod   String        @default("UPI")

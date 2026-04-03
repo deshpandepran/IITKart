@@ -53,6 +53,7 @@ export interface Order {
   courierId?: string;
   courier?: any;
   kartCoinsEarned: number;
+  kartCoinsUsed?: number;
   date: string;
   createdAt?: string;
   items?: any[];

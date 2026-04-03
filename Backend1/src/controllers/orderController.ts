@@ -6,11 +6,19 @@ import { orderService } from '../services/orderService';
 
 export const placeOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { vendorId, items, deliveryAddress, paymentMethod } = req.body;
+    const { vendorId, items, deliveryAddress, paymentMethod, useKartCoins } = req.body;
 
     // Validate deliveryAddress
     if (!deliveryAddress || !deliveryAddress.trim()) {
       return next(new AppError('Delivery address is required', 400));
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) throw new AppError('User not found', 404);
+
+    const KART_COIN_THRESHOLD = 30;
+    if (useKartCoins && user.kartCoins < KART_COIN_THRESHOLD) {
+      return next(new AppError('Not enough Kart Coins for free delivery', 400));
     }
 
     const validatedVendorId = await orderService.validateSingleVendorCart(items);
@@ -32,6 +40,7 @@ export const placeOrder = async (req: AuthRequest, res: Response, next: NextFunc
     });
 
     const kartCoinsEarned = orderService.calculateKartCoins(total);
+    const kartCoinsUsed = useKartCoins ? KART_COIN_THRESHOLD : 0;
 
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
@@ -42,6 +51,7 @@ export const placeOrder = async (req: AuthRequest, res: Response, next: NextFunc
           deliveryAddress: deliveryAddress.trim(),
           paymentMethod,
           kartCoinsEarned,
+          kartCoinsUsed,
           items: {
             create: orderItemsData
           }
@@ -53,15 +63,10 @@ export const placeOrder = async (req: AuthRequest, res: Response, next: NextFunc
         data: {
           orderId: newOrder.id,
           userId: req.user.id,
-          amount: total + 30, // 30 is delivery charge
+          amount: total + (useKartCoins ? 0 : 30), // 30 is delivery charge, handled by coins
           paymentStatus: 'pending',
           method: paymentMethod
         }
-      });
-
-      await tx.user.update({
-        where: { id: req.user.id },
-        data: { kartCoins: { increment: kartCoinsEarned } }
       });
 
       return newOrder;

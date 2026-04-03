@@ -8,6 +8,7 @@ router.use(verifyToken);
 
 router.post('/create-razorpay-order', paymentController.createRazorpayOrder);
 router.post('/verify-payment', paymentController.verifyPayment);
+router.post('/confirm-cod', paymentController.confirmCodPayment);
 router.get('/history', paymentController.getPaymentHistory);
 router.get('/:orderId/receipt', paymentController.getReceipt);
 
