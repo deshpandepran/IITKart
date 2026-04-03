@@ -202,6 +202,12 @@ export const assignCourier = async (req: AuthRequest, res: Response, next: NextF
 
 export const rateOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const existingOrder = await prisma.order.findUnique({ where: { id: req.params.id } });
+    if (!existingOrder) return next(new AppError('Order not found', 404));
+    if (existingOrder.status !== 'delivered') {
+      return next(new AppError('Cannot rate an undelivered order', 400));
+    }
+
     const { type, rating, feedback } = req.body;
 
     // Validate rating is between 1-5
@@ -252,6 +258,12 @@ export const rateOrder = async (req: AuthRequest, res: Response, next: NextFunct
 
 export const submitComplaint = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const existingOrder = await prisma.order.findUnique({ where: { id: req.params.id } });
+    if (!existingOrder) return next(new AppError('Order not found', 404));
+    if (existingOrder.status !== 'delivered') {
+      return next(new AppError('Cannot submit a complaint for an undelivered order', 400));
+    }
+
     const { subject, description, type } = req.body;
 
     // Validate required fields

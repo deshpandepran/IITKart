@@ -133,6 +133,12 @@ export const getFavorites = async (req: AuthRequest, res: Response, next: NextFu
 export const toggleFavorite = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { productId } = req.params;
+
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      return next(new AppError('Product not found', 404));
+    }
+
     let favorites = req.user.favorites || [];
     let added = false;
     

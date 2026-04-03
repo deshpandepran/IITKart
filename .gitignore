@@ -5,6 +5,7 @@ node_modules
 
 /generated/prisma
 Backend1/logs/combined.log
+Backend1/logs/error.log
 Backend1/dist/
 Backend1/uploads/*
 !Backend1/uploads/.gitkeep

@@ -45,7 +45,7 @@ export const paymentService = {
 ║ Delivery:       ₹30.00
 ║ ────────────────────────────
 ║ TOTAL:          ₹${total.toFixed(2)}
-║ Method: ${order.paymentMethod}
+║ Method: ${order.payment?.method || order.paymentMethod}
 ║ Status: ${order.status}
 ║ Address: ${order.deliveryAddress}
 ╚════════════════════════════════╝
