@@ -80,6 +80,10 @@ REFRESH_TOKEN_EXPIRES_IN="30d"
 #Server
 FRONTEND_URL="http://localhost:5173"
 
+# Razorpay (For Payment Gateway Testing)
+RAZORPAY_KEY_ID="rzp_test_SVxBVQr7WSDn2H"
+RAZORPAY_KEY_SECRET="mLgswSvPia09zuHiYctH3VCb"
+
 # Email / OTP Verification (Nodemailer)
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT=587
