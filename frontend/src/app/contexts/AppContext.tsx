@@ -425,6 +425,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   React.useEffect(() => {
     let intervalId: any;
 
+    const fetchVendors = () => {
+      api.get('/vendors')
+        .then(res => {
+          const fetchedVendors = res.data.data.map((v: any) => ({
+            ...v,
+            products: []
+          }));
+          setVendors(fetchedVendors);
+        })
+        .catch(err => console.error("Failed to sync vendors:", err));
+    };
+
     const fetchOrders = () => {
       if (!currentUser) return;
       if (currentUser.role === 'CUSTOMER' || currentUser.role === 'user') {
@@ -442,9 +454,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (currentUser.role === 'CUSTOMER' || currentUser.role === 'user') {
         api.get('/users/complaints').then(res => setComplaints(res.data.data));
       }
+      fetchVendors();
       fetchOrders();
       refreshProducts();
       intervalId = setInterval(() => {
+        fetchVendors();
         fetchOrders();
         refreshProducts();
       }, 3000); // Poll every 3 seconds for instant updates
