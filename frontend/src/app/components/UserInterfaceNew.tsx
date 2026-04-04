@@ -47,7 +47,7 @@ export function UserInterface() {
   const {
     products, currentUser, cart, addToCart, removeFromCart,
     updateCartQuantity, clearCart, addOrder, updateOrder, orders, vendors,
-    updateUser, addComplaint, rateOrder, complaints, authLoading, logout
+    updateUser, addComplaint, rateOrder, complaints, authLoading, logout, toggleFavorite: contextToggleFavorite
   } = useApp();
 
   const [activeTab, setActiveTab]     = useState('browse');
@@ -79,6 +79,12 @@ export function UserInterface() {
       setLocation(currentUser.address || '');
     }
   }, [currentUser?.id]); // Only depend on ID to avoid constant updates
+
+  React.useEffect(() => {
+    if (currentUser && currentUser.favorites) {
+      setFavorites(currentUser.favorites);
+    }
+  }, [currentUser?.favorites]);
 
   const [feedbackDialog, setFeedbackDialog] = useState<{ open: boolean; orderId: string; type: 'product' | 'courier' | 'vendor' }>({ open: false, orderId: '', type: 'product' });
   const [rating, setRating]   = useState(5);
@@ -134,10 +140,12 @@ export function UserInterface() {
     badge: item.id === 'orders' && pendingOrders > 0 ? pendingOrders : undefined,
   }));
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = async (id: string) => {
     const next = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
     setFavorites(next);
-    if (currentUser) updateUser(currentUser.id, { favorites: next });
+    if (currentUser) {
+      await contextToggleFavorite(id);
+    }
     toast.success(favorites.includes(id) ? 'Removed from favorites' : 'Added to favorites');
   };
 

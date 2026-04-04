@@ -205,6 +205,7 @@ interface AppContextType {
   users: User[];
   updateUser: (userId: string, updates: Partial<User>) => void;
   addUser: (user: User) => void;
+  toggleFavorite: (productId: string) => Promise<void>;
   
   complaints: Complaint[];
   addComplaint: (complaint: Complaint) => void;
@@ -664,6 +665,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const toggleFavorite = async (productId: string) => {
+    try {
+      const res = await api.post(`/users/favorites/${productId}`);
+      const { favorites } = res.data.data;
+      setCurrentUser(prev => prev ? { ...prev, favorites } : null);
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
   const addUser = (user: User) => {
     setUsers(prev => [...prev, user]);
   };
@@ -931,6 +942,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         users,
         updateUser,
         addUser,
+        toggleFavorite,
         complaints,
         addComplaint,
         updateComplaint,
