@@ -161,7 +161,7 @@ interface AppContextType {
   addProduct: (product: Product) => Promise<void>;
   removeProduct: (productId: string) => void;
   updateProduct: (productId: string, updates: Partial<Product>) => void;
-  
+
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   authLoading: boolean;
@@ -171,50 +171,50 @@ interface AppContextType {
   register: (name: string, email: string, password: string, role: User['role'], phone?: string, address?: string) => Promise<any>;
   verifyRegistrationOtp: (userId: string, otp: string) => Promise<User | null>;
   resendRegistrationOtp: (userId: string) => Promise<boolean>;
-  
+
   requestPasswordReset: (email: string) => Promise<string | null>;
   verifyPasswordResetOtp: (userId: string, otp: string) => Promise<string | null>;
   resetPassword: (userId: string, resetToken: string, newPassword: string) => Promise<boolean>;
-  
+
   orders: Order[];
   refreshOrders: () => Promise<void>;
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addOrderRating: (orderId: string, rating: number, feedback: string) => void;
-  rateOrder: (orderId: string, type: 'product'|'courier'|'vendor', rating: number, feedback: string) => Promise<void>;
+  rateOrder: (orderId: string, type: 'product' | 'courier' | 'vendor', rating: number, feedback: string) => Promise<void>;
   assignCourier: (orderId: string, courierId: string) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
-  
+
   vendors: Vendor[];
   updateVendor: (vendorId: string, updates: Partial<Vendor>) => void;
-  
+
   courierJobs: CourierJob[];
   addCourierJob: (job: CourierJob) => void;
   updateCourierJob: (jobId: string, updates: Partial<CourierJob>) => void;
-  
+
   courierProfiles: CourierProfile[];
   addCourierProfile: (profile: CourierProfile) => void;
   updateCourierProfile: (profileId: string, updates: Partial<CourierProfile>) => void;
-  
+
   cart: { productId: string; quantity: number }[];
   addToCart: (productId: string) => void;
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  
+
   users: User[];
   updateUser: (userId: string, updates: Partial<User>) => void;
   addUser: (user: User) => void;
   toggleFavorite: (productId: string) => Promise<void>;
-  
+
   complaints: Complaint[];
   addComplaint: (complaint: Complaint) => void;
   updateComplaint: (complaintId: string, updates: Partial<Complaint>) => void;
-  
+
   deliveryIssues: DeliveryIssue[];
   addDeliveryIssue: (issue: DeliveryIssue) => void;
   updateDeliveryIssue: (issueId: string, updates: Partial<DeliveryIssue>) => void;
-  
+
   payments: Payment[];
   createPayment: (orderID: string, userID: string, amount: number, currency: string) => Payment;
   updatePaymentStatus: (paymentID: string, status: Payment['paymentStatus']) => void;
@@ -234,28 +234,28 @@ const MOCK_PRODUCTS: Product[] = [
   { id: '12', vendorId: 'v1', vendorName: 'Amul Parlour', name: 'Ice Cream', category: 'Food', price: 60, description: 'Amul ice cream 100ml', image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400', inStock: true, stockQuantity: 100 },
   { id: '13', vendorId: 'v1', vendorName: 'Amul Parlour', name: 'Cheese Burger', category: 'Food', price: 80, description: 'Delicious cheese burger', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', inStock: true, stockQuantity: 100 },
   { id: '14', vendorId: 'v1', vendorName: 'Amul Parlour', name: 'Milkshake', category: 'Beverage', price: 70, description: 'Thick milkshake', image: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400', inStock: true, stockQuantity: 100 },
-  
+
   // Photocopy Shop
   { id: '3', vendorId: 'v2', vendorName: 'Photocopy Shop', name: 'Color Printout', category: 'Printing', price: 10, description: 'Per page color printing', image: 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=400', inStock: true, stockQuantity: 100 },
   { id: '4', vendorId: 'v2', vendorName: 'Photocopy Shop', name: 'B&W Printout', category: 'Printing', price: 2, description: 'Per page black and white printing', image: 'https://images.unsplash.com/photo-1585012977345-39cef1fc80e0?w=400', inStock: true, stockQuantity: 100 },
   { id: '15', vendorId: 'v2', vendorName: 'Photocopy Shop', name: 'Spiral Binding', category: 'Printing', price: 30, description: 'Spiral binding service', image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400', inStock: true, stockQuantity: 100 },
-  
+
   // Wash & Iron
   { id: '5', vendorId: 'v3', vendorName: 'Wash & Iron', name: 'Laundry Service', category: 'Laundry', price: 100, description: 'Wash and iron service per kg', image: 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=400', inStock: true, stockQuantity: 100 },
   { id: '16', vendorId: 'v3', vendorName: 'Wash & Iron', name: 'Dry Cleaning', category: 'Laundry', price: 150, description: 'Professional dry cleaning', image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400', inStock: true, stockQuantity: 100 },
-  
+
   // Chhota Bazaar
   { id: '6', vendorId: 'v4', vendorName: 'Chhota Bazaar', name: 'Notebook A4', category: 'Stationery', price: 40, description: 'A4 size notebook 200 pages', image: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400', inStock: true, stockQuantity: 100 },
   { id: '11', vendorId: 'v4', vendorName: 'Chhota Bazaar', name: 'Pen Set', category: 'Stationery', price: 50, description: 'Blue pen set of 5', image: 'https://images.unsplash.com/photo-1586932219544-9d33a58cc6c2?w=400', inStock: true, stockQuantity: 100 },
   { id: '17', vendorId: 'v4', vendorName: 'Chhota Bazaar', name: 'Calculator', category: 'Stationery', price: 200, description: 'Scientific calculator', image: 'https://images.unsplash.com/photo-1611224885990-ab7363d1f2a3?w=400', inStock: true, stockQuantity: 100 },
   { id: '18', vendorId: 'v4', vendorName: 'Chhota Bazaar', name: 'File Folder', category: 'Stationery', price: 25, description: 'Plastic file folder', image: 'https://images.unsplash.com/photo-1586105449897-20b5efeb3233?w=400', inStock: true, stockQuantity: 100 },
-  
+
   // Nescafe
   { id: '7', vendorId: 'v5', vendorName: 'Nescafe', name: 'Cappuccino', category: 'Beverage', price: 30, description: 'Hot cappuccino', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400', inStock: true, stockQuantity: 100 },
   { id: '8', vendorId: 'v5', vendorName: 'Nescafe', name: 'Chocolate Pastry', category: 'Food', price: 35, description: 'Fresh chocolate pastry', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400', inStock: true, stockQuantity: 100 },
   { id: '19', vendorId: 'v5', vendorName: 'Nescafe', name: 'Espresso', category: 'Beverage', price: 35, description: 'Strong espresso shot', image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400', inStock: true, stockQuantity: 100 },
   { id: '20', vendorId: 'v5', vendorName: 'Nescafe', name: 'Croissant', category: 'Food', price: 45, description: 'Buttery croissant', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400', inStock: true, stockQuantity: 100 },
-  
+
   // KC Shop
   { id: '9', vendorId: 'v6', vendorName: 'KC Shop', name: 'Maggi', category: 'Food', price: 25, description: 'Hot maggi noodles', image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400', inStock: true, stockQuantity: 100 },
   { id: '10', vendorId: 'v6', vendorName: 'KC Shop', name: 'Samosa', category: 'Food', price: 15, description: 'Crispy samosa', image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400', inStock: true, stockQuantity: 100 },
@@ -292,17 +292,17 @@ const MOCK_USERS: User[] = [
 ];
 
 const MOCK_ORDERS: Order[] = [
-  { id: 'ORD001', userId: 'u1', vendorId: 'v1', products: [{productId: '1', quantity: 2, price: 50}, {productId: '2', quantity: 1, price: 40}], total: 150, status: 'delivered', courierId: 'c1', kartCoinsEarned: 15, date: '2024-01-19T10:30:00', rating: 5, feedback: 'Great service!', courierRating: 5, courierFeedback: 'Very quick and professional delivery!', vendorRating: 4, vendorFeedback: 'Food was good', deliveryAddress: 'Hall 2, Room 201', paymentStatus: 'success', paymentMethod: 'UPI' },
-  { id: 'ORD002', userId: 'u2', vendorId: 'v5', products: [{productId: '7', quantity: 2, price: 30}], total: 70, status: 'delivered', courierId: 'c2', kartCoinsEarned: 7, date: '2024-01-19T11:00:00', rating: 4, feedback: 'Good', courierRating: 4, courierFeedback: 'Delivered on time, thank you!', vendorRating: 5, vendorFeedback: 'Excellent coffee', deliveryAddress: 'Hall 5, Room 105', paymentStatus: 'success', paymentMethod: 'Card' },
-  { id: 'ORD003', userId: 'u3', vendorId: 'v6', products: [{productId: '9', quantity: 1, price: 25}, {productId: '10', quantity: 3, price: 15}], total: 80, status: 'picked', courierId: 'c1', kartCoinsEarned: 8, date: '2024-01-20T08:15:00', deliveryAddress: 'Hall 3, Room 302', paymentStatus: 'success', paymentMethod: 'UPI' },
-  { id: 'ORD004', userId: 'u4', vendorId: 'v1', products: [{productId: '13', quantity: 1, price: 80}], total: 90, status: 'accepted', courierId: 'c2', kartCoinsEarned: 9, date: '2024-01-20T09:00:00', deliveryAddress: 'Hall 7, Room 410', paymentStatus: 'success', paymentMethod: 'Wallet' },
-  { id: 'ORD005', userId: 'u1', vendorId: 'v4', products: [{productId: '6', quantity: 2, price: 40}], total: 90, status: 'pending', kartCoinsEarned: 9, date: '2024-01-20T09:30:00', deliveryAddress: 'Hall 2, Room 201', paymentStatus: 'success', paymentMethod: 'UPI' },
+  { id: 'ORD001', userId: 'u1', vendorId: 'v1', products: [{ productId: '1', quantity: 2, price: 50 }, { productId: '2', quantity: 1, price: 40 }], total: 150, status: 'delivered', courierId: 'c1', kartCoinsEarned: 15, date: '2024-01-19T10:30:00', rating: 5, feedback: 'Great service!', courierRating: 5, courierFeedback: 'Very quick and professional delivery!', vendorRating: 4, vendorFeedback: 'Food was good', deliveryAddress: 'Hall 2, Room 201', paymentStatus: 'success', paymentMethod: 'UPI' },
+  { id: 'ORD002', userId: 'u2', vendorId: 'v5', products: [{ productId: '7', quantity: 2, price: 30 }], total: 70, status: 'delivered', courierId: 'c2', kartCoinsEarned: 7, date: '2024-01-19T11:00:00', rating: 4, feedback: 'Good', courierRating: 4, courierFeedback: 'Delivered on time, thank you!', vendorRating: 5, vendorFeedback: 'Excellent coffee', deliveryAddress: 'Hall 5, Room 105', paymentStatus: 'success', paymentMethod: 'Card' },
+  { id: 'ORD003', userId: 'u3', vendorId: 'v6', products: [{ productId: '9', quantity: 1, price: 25 }, { productId: '10', quantity: 3, price: 15 }], total: 80, status: 'picked', courierId: 'c1', kartCoinsEarned: 8, date: '2024-01-20T08:15:00', deliveryAddress: 'Hall 3, Room 302', paymentStatus: 'success', paymentMethod: 'UPI' },
+  { id: 'ORD004', userId: 'u4', vendorId: 'v1', products: [{ productId: '13', quantity: 1, price: 80 }], total: 90, status: 'accepted', courierId: 'c2', kartCoinsEarned: 9, date: '2024-01-20T09:00:00', deliveryAddress: 'Hall 7, Room 410', paymentStatus: 'success', paymentMethod: 'Wallet' },
+  { id: 'ORD005', userId: 'u1', vendorId: 'v4', products: [{ productId: '6', quantity: 2, price: 40 }], total: 90, status: 'pending', kartCoinsEarned: 9, date: '2024-01-20T09:30:00', deliveryAddress: 'Hall 2, Room 201', paymentStatus: 'success', paymentMethod: 'UPI' },
   // Additional orders for Amul vendor to show delivery partner details
-  { id: 'ORD006', userId: 'u2', vendorId: 'v1', products: [{productId: '1', quantity: 1, price: 50}, {productId: '14', quantity: 1, price: 70}], total: 120, status: 'picked', courierId: 'c1', kartCoinsEarned: 12, date: '2024-01-21T14:20:00', deliveryAddress: 'Hall 5, Room 105', paymentStatus: 'success', paymentMethod: 'UPI' },
-  { id: 'ORD007', userId: 'u3', vendorId: 'v1', products: [{productId: '12', quantity: 2, price: 60}, {productId: '2', quantity: 2, price: 40}], total: 200, status: 'accepted', courierId: 'c2', kartCoinsEarned: 20, date: '2024-01-21T15:45:00', deliveryAddress: 'Hall 3, Room 302', paymentStatus: 'success', paymentMethod: 'Card' },
-  { id: 'ORD008', userId: 'u4', vendorId: 'v1', products: [{productId: '13', quantity: 2, price: 80}], total: 160, status: 'picked', courierId: 'c1', kartCoinsEarned: 16, date: '2024-01-22T10:15:00', deliveryAddress: 'Hall 7, Room 410', paymentStatus: 'success', paymentMethod: 'UPI' },
-  { id: 'ORD009', userId: 'u1', vendorId: 'v1', products: [{productId: '1', quantity: 3, price: 50}, {productId: '12', quantity: 1, price: 60}], total: 210, status: 'delivered', courierId: 'c2', kartCoinsEarned: 21, date: '2024-01-18T16:30:00', rating: 5, feedback: 'Excellent food quality!', vendorRating: 5, vendorFeedback: 'Amazing sandwiches and ice cream', deliveryAddress: 'Hall 2, Room 201', paymentStatus: 'success', paymentMethod: 'Wallet' },
-  { id: 'ORD010', userId: 'u2', vendorId: 'v1', products: [{productId: '14', quantity: 2, price: 70}], total: 140, status: 'accepted', courierId: 'c1', kartCoinsEarned: 14, date: '2024-01-22T12:00:00', deliveryAddress: 'Hall 5, Room 105', paymentStatus: 'success', paymentMethod: 'UPI' },
+  { id: 'ORD006', userId: 'u2', vendorId: 'v1', products: [{ productId: '1', quantity: 1, price: 50 }, { productId: '14', quantity: 1, price: 70 }], total: 120, status: 'picked', courierId: 'c1', kartCoinsEarned: 12, date: '2024-01-21T14:20:00', deliveryAddress: 'Hall 5, Room 105', paymentStatus: 'success', paymentMethod: 'UPI' },
+  { id: 'ORD007', userId: 'u3', vendorId: 'v1', products: [{ productId: '12', quantity: 2, price: 60 }, { productId: '2', quantity: 2, price: 40 }], total: 200, status: 'accepted', courierId: 'c2', kartCoinsEarned: 20, date: '2024-01-21T15:45:00', deliveryAddress: 'Hall 3, Room 302', paymentStatus: 'success', paymentMethod: 'Card' },
+  { id: 'ORD008', userId: 'u4', vendorId: 'v1', products: [{ productId: '13', quantity: 2, price: 80 }], total: 160, status: 'picked', courierId: 'c1', kartCoinsEarned: 16, date: '2024-01-22T10:15:00', deliveryAddress: 'Hall 7, Room 410', paymentStatus: 'success', paymentMethod: 'UPI' },
+  { id: 'ORD009', userId: 'u1', vendorId: 'v1', products: [{ productId: '1', quantity: 3, price: 50 }, { productId: '12', quantity: 1, price: 60 }], total: 210, status: 'delivered', courierId: 'c2', kartCoinsEarned: 21, date: '2024-01-18T16:30:00', rating: 5, feedback: 'Excellent food quality!', vendorRating: 5, vendorFeedback: 'Amazing sandwiches and ice cream', deliveryAddress: 'Hall 2, Room 201', paymentStatus: 'success', paymentMethod: 'Wallet' },
+  { id: 'ORD010', userId: 'u2', vendorId: 'v1', products: [{ productId: '14', quantity: 2, price: 70 }], total: 140, status: 'accepted', courierId: 'c1', kartCoinsEarned: 14, date: '2024-01-22T12:00:00', deliveryAddress: 'Hall 5, Room 105', paymentStatus: 'success', paymentMethod: 'UPI' },
 ];
 
 const MOCK_COURIER_PROFILES: CourierProfile[] = [
@@ -328,7 +328,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [courierJobs, setCourierJobs] = useState<CourierJob[]>([]);
   const [courierProfiles, setCourierProfiles] = useState<CourierProfile[]>(MOCK_COURIER_PROFILES);
-  const [cart, setCart] = useState<{ productId: string; quantity: number }[]>([]);
+  const [cart, setCart] = useState<{ productId: string; quantity: number }[]>(() => {
+    const saved = localStorage.getItem('iitkart_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('iitkart_cart', JSON.stringify(cart));
+  }, [cart]);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [complaints, setComplaints] = useState<Complaint[]>(MOCK_COMPLAINTS);
   const [deliveryIssues, setDeliveryIssues] = useState<DeliveryIssue[]>(MOCK_DELIVERY_ISSUES);
@@ -341,12 +348,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           api.get('/vendors'),
           api.get('/vendors/products')
         ]);
-        
+
         const fetchedVendors = vendorsRes.data.data.map((v: any) => ({
           ...v,
           products: [] // Setup standard vendor relationships on frontend if needed
         }));
-        
+
         const fetchedProducts = productsRes.data.data.map((p: any) => ({
           ...p,
           vendorName: p.vendor?.name || "Unknown Vendor" // Map the nested vendor to frontend's vendorName
@@ -358,7 +365,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Failed to load backend catalogs:", error);
       }
     };
-    
+
     fetchInitialData();
   }, []);
 
@@ -386,7 +393,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCurrentUser(res.data.data);
       } catch (e: any) {
         // Token invalid/expired or backend unreachable; fall back to logged-out.
-        try { localStorage.removeItem('token'); } catch {}
+        try { localStorage.removeItem('token'); } catch { }
         setCurrentUser(null);
       } finally {
         settled = true;
@@ -410,7 +417,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         vendorName: p.vendor?.name || "Unknown Vendor",
         image: formatImage(p.image)
       }));
-      
+
       if (currentUser && (currentUser.role === 'VENDOR' || currentUser.role === 'vendor')) {
         try {
           const myProductsRes = await api.get('/vendors/me/products' + cacheBust);
@@ -421,10 +428,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }));
           const myProductIds = new Set(myProducts.map((p: any) => p.id));
           allProducts = allProducts.filter((p: any) => !myProductIds.has(p.id)).concat(myProducts);
-        } catch(e) {}
+        } catch (e) { }
       }
       setProducts(allProducts);
-    } catch(e) {}
+    } catch (e) { }
   };
 
   React.useEffect(() => {
@@ -493,7 +500,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else if (product.image instanceof File) {
         formData.append('image', product.image);
       }
-      
+
       const response = await api.post('/vendors/me/products', formData);
       const newProduct = { ...response.data.data, vendorName: currentUser?.name || 'My Shop' };
       setProducts(prev => [...prev, newProduct]);
@@ -520,7 +527,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateProduct = async (productId: string, updates: any) => {
     try {
       let payload: any = updates;
-      
+
       if (updates.image instanceof File) {
         payload = new FormData();
         Object.entries(updates).forEach(([key, value]) => {
@@ -584,7 +591,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       else if (status === 'delivered') await api.patch(`/riders/deliveries/${orderId}/delivered`);
       else if (status === 'picked') await api.post(`/riders/deliveries/${orderId}/accept`);
       else await api.patch(`/orders/${orderId}/status`, { status });
-      
+
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
     } catch (error) {
       console.error("Failed to update status:", error);
@@ -592,7 +599,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const rateOrder = async (orderId: string, type: 'product'|'courier'|'vendor', rating: number, feedback: string) => {
+  const rateOrder = async (orderId: string, type: 'product' | 'courier' | 'vendor', rating: number, feedback: string) => {
     try {
       await api.patch(`/orders/${orderId}/rate`, { type, rating, feedback });
       setOrders(prev => prev.map(o => {
@@ -671,7 +678,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {
       if (currentUser?.id === userId) await api.patch('/users/profile', updates);
-      
+
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
       if (currentUser && currentUser.id === userId) {
         setCurrentUser({ ...currentUser, ...updates });
@@ -686,7 +693,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUser((prev: any) => {
       if (!prev) return prev;
       const isFav = prev.favorites?.includes(productId);
-      const newFavs = isFav 
+      const newFavs = isFav
         ? prev.favorites.filter((id: string) => id !== productId)
         : [...(prev.favorites || []), productId];
       return { ...prev, favorites: newFavs };
@@ -701,7 +708,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentUser((prev: any) => {
         if (!prev) return prev;
         const isFav = prev.favorites?.includes(productId);
-        const rolledBackFavs = isFav 
+        const rolledBackFavs = isFav
           ? prev.favorites.filter((id: string) => id !== productId)
           : [...(prev.favorites || []), productId];
         return { ...prev, favorites: rolledBackFavs };
@@ -754,12 +761,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const res = await api.get('/users/orders' + cacheBust);
         setOrders(res.data.data);
-      } catch(e) {}
+      } catch (e) { }
     } else if (currentUser.role === 'VENDOR' || currentUser.role === 'vendor') {
       try {
         const res = await api.get('/vendors/me/orders' + cacheBust);
         setOrders(res.data.data);
-      } catch(e) {}
+      } catch (e) { }
     }
   };
 
@@ -803,7 +810,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    try { localStorage.removeItem('token'); } catch {}
+    try { localStorage.removeItem('token'); } catch { }
     setCurrentUser(null);
   };
 

@@ -23,9 +23,9 @@ import { isValidPhone } from '@/app/utils/validation';
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     delivered: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    picked:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    accepted:  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    pending:   'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+    picked: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    accepted: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    pending: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
     cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   };
   return (
@@ -36,30 +36,30 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const NAV_ITEMS: SidebarItem[] = [
-  { id: 'browse',       label: 'Browse',       icon: Search   },
-  { id: 'orders',       label: 'My Orders',    icon: Package  },
-  { id: 'transactions', label: 'Transactions', icon: Receipt  },
-  { id: 'wallet',       label: 'Kart Coins',   icon: Coins    },
-  { id: 'settings',     label: 'Settings',     icon: Settings },
+  { id: 'browse', label: 'Browse', icon: Search },
+  { id: 'orders', label: 'My Orders', icon: Package },
+  { id: 'transactions', label: 'Transactions', icon: Receipt },
+  { id: 'wallet', label: 'Kart Coins', icon: Coins },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export function UserInterface() {
   const navigate = useNavigate();
   const {
     products, currentUser, cart, addToCart, removeFromCart,
-    updateCartQuantity, clearCart, addOrder, updateOrder, orders, vendors,
+    updateCartQuantity, clearCart, addOrder, updateOrder, updateOrderStatus, orders, vendors,
     updateUser, addComplaint, rateOrder, complaints, authLoading, logout, toggleFavorite: contextToggleFavorite
   } = useApp();
 
-  const [activeTab, setActiveTab]     = useState('browse');
+  const [activeTab, setActiveTab] = useState('browse');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [shopFilter, setShopFilter]   = useState<'all' | 'bestsellers' | 'favorites'>('all');
-  const [showCart, setShowCart]       = useState(false);
+  const [shopFilter, setShopFilter] = useState<'all' | 'bestsellers' | 'favorites'>('all');
+  const [showCart, setShowCart] = useState(false);
   const [useKartCoins, setUseKartCoins] = useState(false);
-  const [location, setLocation]       = useState(currentUser?.address || '');
+  const [location, setLocation] = useState(currentUser?.address || '');
   const [selectedVendor, setSelectedVendor] = useState('all');
-  const [favorites, setFavorites]     = useState<string[]>(currentUser?.favorites || []);
+  const [favorites, setFavorites] = useState<string[]>(currentUser?.favorites || []);
 
   const [settingsData, setSettingsData] = useState({
     name: currentUser?.name || '', email: currentUser?.email || '',
@@ -88,7 +88,7 @@ export function UserInterface() {
   }, [currentUser?.favorites]);
 
   const [feedbackDialog, setFeedbackDialog] = useState<{ open: boolean; orderId: string; type: 'product' | 'courier' | 'vendor' }>({ open: false, orderId: '', type: 'product' });
-  const [rating, setRating]   = useState(5);
+  const [rating, setRating] = useState(5);
   const [feedback, setFeedback] = useState('');
 
   const [complaintDialog, setComplaintDialog] = useState<{ open: boolean; orderId: string }>({ open: false, orderId: '' });
@@ -129,12 +129,12 @@ export function UserInterface() {
     return Array.from(m.entries());
   }, [filteredProducts]);
 
-  const userOrders    = currentUser ? orders.filter(o => o.userId === currentUser.id) : [];
+  const userOrders = currentUser ? orders.filter(o => o.userId === currentUser.id) : [];
   const pendingOrders = userOrders.filter(o => o.status !== 'delivered').length;
-  const cartTotal      = cart.reduce((s, i) => s + (products.find(p => p.id === i.productId)?.price || 0) * i.quantity, 0);
+  const cartTotal = cart.reduce((s, i) => s + (products.find(p => p.id === i.productId)?.price || 0) * i.quantity, 0);
   const deliveryCharges = useKartCoins ? 0 : 30;
-  const orderTotal     = cartTotal + deliveryCharges;
-  const cartCount      = cart.reduce((s, i) => s + i.quantity, 0);
+  const orderTotal = cartTotal + deliveryCharges;
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   // Update nav items with live badges
   const navItems = NAV_ITEMS.map(item => ({
@@ -153,7 +153,7 @@ export function UserInterface() {
 
   const handleCheckout = async () => {
     if (!location.trim()) { toast.error('Please enter a delivery location'); return; }
-    if (!cart.length)     { toast.error('Your cart is empty'); return; }
+    if (!cart.length) { toast.error('Your cart is empty'); return; }
     if (isProcessingCheckout) return;
     setIsProcessingCheckout(true);
 
@@ -226,14 +226,14 @@ export function UserInterface() {
 
   const generateReceipt = (order: any) => {
     const vendor = vendors.find(v => v.id === order.vendorId);
-    const total  = order.total + 30;
+    const total = order.total + 30;
     return `\n╔══════════════════════════════════╗\n║        ORDER RECEIPT            ║\n║           IITKart               ║\n╠══════════════════════════════════╣\n║ Order ID : ${order.id}\n║ Date     : ${new Date(order.createdAt || order.date).toLocaleString('en-IN')}\n║ Vendor   : ${vendor?.name || 'Unknown'}\n║\n║ Item Total : ₹${order.total.toFixed(2)}\n║ Delivery   : ₹30.00\n║ ────────────────────────────────\n║ TOTAL      : ₹${total.toFixed(2)}\n║\n║ Payment : ${order.paymentMethod || 'UPI'} (${order.paymentStatus === 'success' ? 'PAID ✓' : 'PENDING'})\n║ Coins   : +${order.kartCoinsEarned}\n║ Address : ${order.deliveryAddress}\n╚══════════════════════════════════╝`;
   };
 
   const downloadReceipt = (order: any) => {
     const blob = new Blob([generateReceipt(order)], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a'); a.href = url; a.download = `IITKart-${order.id}.txt`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `IITKart-${order.id}.txt`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     toast.success('Receipt downloaded!');
   };
@@ -456,11 +456,10 @@ export function UserInterface() {
                             const active = i <= currentIdx;
                             return (
                               <div key={step.label} className="relative flex flex-col items-center gap-2 z-10">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                                  active
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${active
                                     ? i === 3 && order.status === 'delivered' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-[#1E3A8A] border-[#1E3A8A] text-white'
                                     : 'bg-white dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 text-slate-300 dark:text-slate-600'
-                                }`}>
+                                  }`}>
                                   <Icon className="w-4 h-4" />
                                 </div>
                                 <div className="text-center">
@@ -473,9 +472,9 @@ export function UserInterface() {
                         </div>
                         <div className="mt-5 flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl text-sm text-slate-600 dark:text-slate-400">
                           <div>
-                            {order.status === 'pending'   && '🕐 Awaiting shop confirmation…'}
-                            {order.status === 'accepted'  && '✅ Shop has accepted and is preparing your order'}
-                            {order.status === 'picked'    && '🚴 Your order is on the way!'}
+                            {order.status === 'pending' && '🕐 Awaiting shop confirmation…'}
+                            {order.status === 'accepted' && '✅ Shop has accepted and is preparing your order'}
+                            {order.status === 'picked' && '🚴 Your order is on the way!'}
                             {order.status === 'delivered' && '✨ Order delivered! Hope you enjoyed your purchase'}
                           </div>
                           {order.status === 'pending' && (
@@ -491,18 +490,17 @@ export function UserInterface() {
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Rate Your Experience</p>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             {[
-                              { key: 'product', label: 'Products',         icon: Package,  hasRating: order.rating,       action: () => setFeedbackDialog({ open: true, orderId: order.id, type: 'product' }) },
+                              { key: 'product', label: 'Products', icon: Package, hasRating: order.rating, action: () => setFeedbackDialog({ open: true, orderId: order.id, type: 'product' }) },
                               ...(order.courierId ? [{ key: 'courier', label: 'Delivery Partner', icon: Bike, hasRating: order.courierRating, action: () => setFeedbackDialog({ open: true, orderId: order.id, type: 'courier' as any }) }] : []),
-                              { key: 'vendor',  label: 'Shop',             icon: Store,    hasRating: order.vendorRating, action: () => setFeedbackDialog({ open: true, orderId: order.id, type: 'vendor' as any }) },
+                              { key: 'vendor', label: 'Shop', icon: Store, hasRating: order.vendorRating, action: () => setFeedbackDialog({ open: true, orderId: order.id, type: 'vendor' as any }) },
                             ].map(r => {
                               const Icon = r.icon;
                               return (
                                 <button key={r.key} onClick={r.action} disabled={!!r.hasRating}
-                                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                                    r.hasRating
+                                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all ${r.hasRating
                                       ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30 text-emerald-600 cursor-not-allowed'
                                       : 'bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 text-slate-600 dark:text-slate-300 hover:border-[#1E3A8A]/40 hover:bg-blue-50'
-                                  }`}>
+                                    }`}>
                                   {r.hasRating ? <CheckCircle className="w-3.5 h-3.5" /> : <Star className="w-3.5 h-3.5" />}
                                   {r.hasRating ? `Rated ${r.label}` : `Rate ${r.label}`}
                                 </button>
@@ -542,7 +540,7 @@ export function UserInterface() {
                   </div>
                 ) : userOrders.map(order => {
                   const vendor = vendors.find(v => v.id === order.vendorId);
-                  const total  = order.total + 30;
+                  const total = order.total + 30;
                   return (
                     <div key={order.id} className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm overflow-hidden">
                       <div className="p-5 border-b border-blue-50 dark:border-blue-900/20 flex items-center justify-between flex-wrap gap-3 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10">
@@ -658,10 +656,10 @@ export function UserInterface() {
                           ? <img src={getImageUrl(settingsData.photo)} alt="Profile" className="w-full h-full object-cover" />
                           : <User className="w-10 h-10 text-[#1E3A8A] dark:text-blue-400" />}
                       </div>
-                      <input 
-                        type="file" 
-                        id="photo-upload" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        id="photo-upload"
+                        className="hidden"
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -682,18 +680,18 @@ export function UserInterface() {
                     <p className="text-xs text-slate-400">Click the camera icon to select a local photo</p>
                   </div>
                   {[
-                    { label: 'Full Name',  icon: User,     field: 'name',    type: 'text',  placeholder: 'Your full name' },
-                    { label: 'Email',      icon: Mail,     field: 'email',   type: 'email', placeholder: 'your@email.com' },
-                    { label: 'Phone',      icon: Phone,    field: 'phone',   type: 'tel',   placeholder: '10-digit number' },
-                    { label: 'Address',    icon: HomeIcon, field: 'address', type: 'text',  placeholder: 'Hall X, Room XXX' },
+                    { label: 'Full Name', icon: User, field: 'name', type: 'text', placeholder: 'Your full name' },
+                    { label: 'Email', icon: Mail, field: 'email', type: 'email', placeholder: 'your@email.com' },
+                    { label: 'Phone', icon: Phone, field: 'phone', type: 'tel', placeholder: '10-digit number' },
+                    { label: 'Address', icon: HomeIcon, field: 'address', type: 'text', placeholder: 'Hall X, Room XXX' },
                   ].map(f => {
                     const Icon = f.icon;
                     return (
                       <div key={f.field} className="space-y-1">
                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" />{f.label}</Label>
-                        <Input 
-                          type={f.type} 
-                          placeholder={f.placeholder} 
+                        <Input
+                          type={f.type}
+                          placeholder={f.placeholder}
                           value={(settingsData as any)[f.field]}
                           onChange={e => {
                             let val = e.target.value;
@@ -703,9 +701,8 @@ export function UserInterface() {
                             setSettingsData({ ...settingsData, [f.field]: val });
                           }}
                           disabled={f.field === 'email'}
-                          className={`h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 rounded-xl focus:border-[#1E3A8A] disabled:opacity-60 disabled:cursor-not-allowed ${
-                            f.field === 'phone' && settingsData.phone && !isValidPhone(settingsData.phone) ? 'border-red-500 focus:border-red-500' : ''
-                          }`} 
+                          className={`h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 rounded-xl focus:border-[#1E3A8A] disabled:opacity-60 disabled:cursor-not-allowed ${f.field === 'phone' && settingsData.phone && !isValidPhone(settingsData.phone) ? 'border-red-500 focus:border-red-500' : ''
+                            }`}
                         />
                         {f.field === 'phone' && settingsData.phone && !isValidPhone(settingsData.phone) && (
                           <p className="text-[10px] text-red-500 mt-1 pl-1 font-semibold">
@@ -716,49 +713,49 @@ export function UserInterface() {
                     );
                   })}
                   <div className="flex gap-3 pt-2">
-                      <button onClick={async () => {
-                        if (!isValidPhone(settingsData.phone)) {
-                          toast.error('Please enter a valid 10-digit phone number');
-                          return;
-                        }
-                        try {
-                          let photoRef = settingsData.photo;
-                          // Handle FormData if file was selected
-                          if ((settingsData as any).photoFile) {
-                            const formData = new FormData();
-                            formData.append('photo', (settingsData as any).photoFile);
-                            formData.append('name', settingsData.name);
-                            formData.append('email', settingsData.email);
-                            formData.append('phone', settingsData.phone);
-                            formData.append('address', settingsData.address);
-                            // Use the proper api instance for multipart form data
-                            const res = await api.patch('/users/profile', formData, {
-                               headers: { 'Content-Type': 'multipart/form-data' }
-                            });
-                            if (res?.data?.data) {
-                              photoRef = res.data.data.photo;
-                              toast.success('Settings & Photo saved!');
-                            }
-                          }
-
-                          // Update all user data
-                          updateUser(currentUser.id, {
-                            name: settingsData.name,
-                            email: settingsData.email,
-                            phone: settingsData.phone,
-                            address: settingsData.address,
-                            photo: photoRef
+                    <button onClick={async () => {
+                      if (!isValidPhone(settingsData.phone)) {
+                        toast.error('Please enter a valid 10-digit phone number');
+                        return;
+                      }
+                      try {
+                        let photoRef = settingsData.photo;
+                        // Handle FormData if file was selected
+                        if ((settingsData as any).photoFile) {
+                          const formData = new FormData();
+                          formData.append('photo', (settingsData as any).photoFile);
+                          formData.append('name', settingsData.name);
+                          formData.append('email', settingsData.email);
+                          formData.append('phone', settingsData.phone);
+                          formData.append('address', settingsData.address);
+                          // Use the proper api instance for multipart form data
+                          const res = await api.patch('/users/profile', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
                           });
-
-                          // Clear photoFile after save
-                          setSettingsData(prev => ({ ...prev, photoFile: undefined } as any));
-                          toast.success('Settings saved!');
-                        } catch (e) {
-                          toast.error('Failed to save settings');
+                          if (res?.data?.data) {
+                            photoRef = res.data.data.photo;
+                            toast.success('Settings & Photo saved!');
+                          }
                         }
-                      }}
-                        disabled={!isValidPhone(settingsData.phone)}
-                        className="flex-1 h-11 bg-[#1E3A8A] hover:bg-[#2B4FBA] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-md active:scale-95 text-sm">Save Changes</button>
+
+                        // Update all user data
+                        updateUser(currentUser.id, {
+                          name: settingsData.name,
+                          email: settingsData.email,
+                          phone: settingsData.phone,
+                          address: settingsData.address,
+                          photo: photoRef
+                        });
+
+                        // Clear photoFile after save
+                        setSettingsData(prev => ({ ...prev, photoFile: undefined } as any));
+                        toast.success('Settings saved!');
+                      } catch (e) {
+                        toast.error('Failed to save settings');
+                      }
+                    }}
+                      disabled={!isValidPhone(settingsData.phone)}
+                      className="flex-1 h-11 bg-[#1E3A8A] hover:bg-[#2B4FBA] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-md active:scale-95 text-sm">Save Changes</button>
                     <button onClick={() => { logout(); navigate('/auth'); }}
                       className="flex-1 h-11 border-2 border-red-200 dark:border-red-900/30 text-red-500 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-sm">Logout</button>
                   </div>
@@ -788,7 +785,7 @@ export function UserInterface() {
                 <div className="flex flex-col items-center justify-center h-full text-center gap-3">
                   <ShoppingCart className="w-12 h-12 text-blue-200 dark:text-blue-800" />
                   <p className="font-bold text-slate-600 dark:text-slate-300" style={{ fontFamily: 'Syne, sans-serif' }}>Your cart is empty</p>
-                  <button onClick={() => setShowCart(false)} className="bg-[#1E3A8A] hover:bg-[#2B4FBA] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all mt-2">Browse Products</button>
+                  <button onClick={() => { setShowCart(false); setActiveTab('browse'); }} className="bg-[#1E3A8A] hover:bg-[#2B4FBA] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all mt-2">Browse Products</button>
                 </div>
               ) : cart.map(item => {
                 const product = products.find(p => p.id === item.productId);
@@ -797,8 +794,8 @@ export function UserInterface() {
                   <div key={item.productId} className="flex gap-3 bg-[#F0F4FF] dark:bg-[#0A1628] rounded-2xl p-3 border border-blue-100/50 dark:border-blue-900/20">
                     <img src={getImageUrl(product.image)} alt={product.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-[#0F172A] dark:text-white text-sm line-clamp-1">{product.name}</h4>
-                      <p className="text-xs text-slate-400 mb-2">{product.vendorName}</p>
+                      <h4 className="font-bold text-[#0F172A] dark:text-white text-sm truncate">{product.name}</h4>
+                      <p className="text-xs text-slate-400 mb-2 truncate">{product.vendorName}</p>
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-[#1E3A8A] dark:text-blue-300 text-sm">₹{product.price * item.quantity}</span>
                         <div className="flex items-center gap-1.5">
@@ -817,13 +814,13 @@ export function UserInterface() {
               <div className="p-4 border-t border-blue-100 dark:border-blue-900/30 space-y-3">
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800/30">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-bold text-[#1E3A8A] dark:text-blue-300 flex items-center gap-1.5"><Coins className="w-4 h-4 text-[#F97316]"/> Kart Coins</span>
+                    <span className="text-sm font-bold text-[#1E3A8A] dark:text-blue-300 flex items-center gap-1.5"><Coins className="w-4 h-4 text-[#F97316]" /> Kart Coins</span>
                     <span className="text-xs font-bold bg-[#1E3A8A] text-white px-2 py-0.5 rounded-full">{currentUser.kartCoins} Available</span>
                   </div>
                   <label className={`flex items-center gap-2 mt-2 cursor-pointer ${currentUser.kartCoins < 30 ? 'opacity-50' : ''}`}>
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 rounded text-[#1E3A8A] focus:ring-[#1E3A8A]" 
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded text-[#1E3A8A] focus:ring-[#1E3A8A]"
                       checked={useKartCoins}
                       onChange={(e) => setUseKartCoins(e.target.checked)}
                       disabled={currentUser.kartCoins < 30}
@@ -866,7 +863,7 @@ export function UserInterface() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="flex gap-2 justify-center">
-              {[1,2,3,4,5].map(s => (
+              {[1, 2, 3, 4, 5].map(s => (
                 <button key={s} onClick={() => setRating(s)} className="transition-transform hover:scale-110">
                   <Star className={`w-8 h-8 ${s <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`} />
                 </button>

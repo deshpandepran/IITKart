@@ -41,19 +41,19 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     const uid = await requestPasswordReset(identifier);
-    if (!uid) { 
-      toast.error('Failed to send OTP. Account not found or network error.'); 
-      setIsLoading(false); 
-      return; 
+    if (!uid) {
+      toast.error('Failed to send OTP. Account not found or network error.');
+      setIsLoading(false);
+      return;
     }
-    
+
     setUserId(uid);
     setOtpExpiry(Date.now() + 300000); // 5 mins
     setTimeRemaining(300);
     toast.success(`OTP sent to your email!`);
-    setStep('otp'); 
+    setStep('otp');
     setIsLoading(false);
   };
 
@@ -61,14 +61,14 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
     e.preventDefault();
     if (otp.length !== 6) { toast.error('Please enter a 6-digit OTP'); return; }
     setIsLoading(true);
-    
+
     if (otpExpiry && Date.now() > otpExpiry) { toast.error('OTP expired. Please request a new one.'); resetFlow(); setIsLoading(false); return; }
-    
+
     const token = await verifyPasswordResetOtp(userId, otp);
-    if (token) { 
-      toast.success('OTP verified!'); 
+    if (token) {
+      toast.success('OTP verified!');
       setResetToken(token);
-      setStep('newPassword'); 
+      setStep('newPassword');
     } else {
       const att = otpAttempts + 1; setOtpAttempts(att);
       if (att >= 3) { toast.error('Too many failed attempts. Try again later.'); resetFlow(); }
@@ -82,11 +82,11 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
     if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
     setIsLoading(true);
-    
+
     const success = await resetPassword(userId, resetToken, newPassword);
     if (success) {
       toast.success('Password reset successfully!');
-      setStep('success'); 
+      setStep('success');
     } else {
       toast.error('Failed to reset password. Timeout or invalid token.');
     }
@@ -125,7 +125,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
 
   const subtitles: Record<string, string> = {
     identifier: 'Enter your email or phone to receive a verification code',
-    otp: `Enter the 6-digit OTP sent to ${identifier}`,
+    otp: `Enter the 6-digit OTP sent to your Email ID`,
     newPassword: 'Choose a strong password for your account',
     success: 'You can now sign in with your new password',
   };
@@ -155,11 +155,10 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
               <div className="flex items-center gap-2 mb-6">
                 {[0, 1, 2].map(i => (
                   <React.Fragment key={i}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      i < stepIdx ? 'bg-[#1E3A8A] text-white' :
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < stepIdx ? 'bg-[#1E3A8A] text-white' :
                       i === stepIdx ? 'bg-[#1E3A8A] text-white ring-4 ring-blue-100 dark:ring-blue-900/30' :
-                      'bg-blue-100 dark:bg-blue-900/30 text-slate-400'
-                    }`}>
+                        'bg-blue-100 dark:bg-blue-900/30 text-slate-400'
+                      }`}>
                       {i < stepIdx ? <CheckCircle className="w-4 h-4" /> : i + 1}
                     </div>
                     {i < 2 && <div className={`flex-1 h-0.5 rounded transition-colors ${i < stepIdx ? 'bg-[#1E3A8A]' : 'bg-blue-100 dark:bg-blue-900/30'}`} />}
@@ -185,7 +184,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
                   <div className="relative">
                     {identifier.includes('@') ? <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /> : <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                     <Input
-                      type="text" placeholder="you@iitk.ac.in or 9876543210"
+                      type="text" placeholder="Enter your registered email or phone"
                       value={identifier} onChange={e => setIdentifier(e.target.value)} required
                       className="pl-10 h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 rounded-xl focus:border-[#1E3A8A]"
                     />
@@ -208,7 +207,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
                 <div className="space-y-2 flex flex-col items-center">
                   <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                     <InputOTPGroup>
-                      {[0,1,2,3,4,5].map(i => (
+                      {[0, 1, 2, 3, 4, 5].map(i => (
                         <InputOTPSlot key={i} index={i} className="border-blue-200 dark:border-blue-800 focus:border-[#1E3A8A] w-11 h-12 text-lg font-bold" />
                       ))}
                     </InputOTPGroup>
@@ -263,11 +262,10 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
                   </div>
                 </div>
                 {newPassword && confirmPassword && (
-                  <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold border ${
-                    newPassword === confirmPassword
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-800/30 dark:text-emerald-400'
-                      : 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/10 dark:border-red-800/30'
-                  }`}>
+                  <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold border ${newPassword === confirmPassword
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-800/30 dark:text-emerald-400'
+                    : 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/10 dark:border-red-800/30'
+                    }`}>
                     {newPassword === confirmPassword ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {newPassword === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
                   </div>

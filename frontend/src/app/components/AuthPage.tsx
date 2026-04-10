@@ -236,11 +236,10 @@ export function AuthPage() {
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setAwaitingOtp(false); }}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  activeTab === tab && !awaitingOtp
-                    ? 'bg-[#1E3A8A] text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab && !awaitingOtp
+                  ? 'bg-[#1E3A8A] text-white shadow-md'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  }`}
               >
                 {tab === 'login' ? 'Sign In' : 'Create Account'}
               </button>
@@ -317,7 +316,7 @@ export function AuthPage() {
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     type="email"
-                    placeholder="you@iitk.ac.in"
+                    placeholder="you@example.com"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                     required
@@ -390,11 +389,10 @@ export function AuthPage() {
                         key={r.value}
                         type="button"
                         onClick={() => setRegisterData({ ...registerData, role: r.value })}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-                          registerData.role === r.value
-                            ? 'bg-[#1E3A8A] border-[#1E3A8A] text-white shadow-md'
-                            : 'bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 text-slate-600 dark:text-slate-300 hover:border-[#1E3A8A]/40'
-                        }`}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${registerData.role === r.value
+                          ? 'bg-[#1E3A8A] border-[#1E3A8A] text-white shadow-md'
+                          : 'bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 text-slate-600 dark:text-slate-300 hover:border-[#1E3A8A]/40'
+                          }`}
                       >
                         <Icon className="w-4 h-4" /> {r.label}
                       </button>
@@ -421,7 +419,7 @@ export function AuthPage() {
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
                       type="email"
-                      placeholder="you@iitk.ac.in"
+                      placeholder={registerData.role === 'CUSTOMER' ? 'you@example.com' : registerData.role === 'VENDOR' ? 'shop@example.com' : 'you@example.com'}
                       value={registerData.email}
                       onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                       required
@@ -442,9 +440,8 @@ export function AuthPage() {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                         setRegisterData({ ...registerData, phone: val });
                       }}
-                      className={`pl-10 h-11 bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 focus:border-[#1E3A8A] rounded-xl ${
-                        registerData.phone && !isValidPhone(registerData.phone) ? 'border-red-500 focus:border-red-500' : ''
-                      }`}
+                      className={`pl-10 h-11 bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 focus:border-[#1E3A8A] rounded-xl ${registerData.phone && !isValidPhone(registerData.phone) ? 'border-red-500 focus:border-red-500' : ''
+                        }`}
                     />
                   </div>
                   {registerData.phone && !isValidPhone(registerData.phone) && (
@@ -460,7 +457,7 @@ export function AuthPage() {
                     <div className="relative">
                       <Home className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input
-                        placeholder="Hall X, Room XXX"
+                        placeholder="Your IITK Address"
                         value={registerData.address}
                         onChange={(e) => setRegisterData({ ...registerData, address: e.target.value })}
                         className="pl-10 h-11 bg-white dark:bg-[#0F1E3A] border-blue-100 dark:border-blue-900/40 focus:border-[#1E3A8A] rounded-xl"

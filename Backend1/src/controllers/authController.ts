@@ -28,6 +28,17 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) return next(new AppError('Email already registered', 400));
 
+    const existingPending = await prisma.pendingUser.findUnique({ where: { email } });
+    if (existingPending) {
+      const activeOtp = await prisma.oTPRecord.findFirst({
+        where: { email, purpose: 'SIGNUP', expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' }
+      });
+      if (activeOtp) {
+        return next(new AppError('Verification pending. Please wait 10 minutes before trying to register again.', 400));
+      }
+    }
+
     if (phone) {
       const existingPhone = await prisma.user.findFirst({ where: { phone: String(phone).trim() } });
       if (existingPhone) return next(new AppError('This phone number is already registered.', 400));
@@ -36,7 +47,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const passwordHash = await authService.hashPassword(password);
     const otp = authService.generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-    
+
     // Upsert into PendingUser
     const pendingUser = await prisma.pendingUser.upsert({
       where: { email },
@@ -69,12 +80,12 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
-    
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || user.status === 'banned') {
       return next(new AppError('Invalid email or password', 401));
     }
-    
+
     if (!user.isVerified) {
       return next(new AppError('Please verify your email to login.', 403));
     }
@@ -108,7 +119,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     const user = await prisma.user.findFirst({
       where: { OR: [{ email: identifier }, { phone: identifier }] }
     });
-    
+
     if (!user) return next(new AppError('User not found', 404));
 
     const otp = authService.generateOTP();
@@ -126,7 +137,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     await notificationService.sendOTPEmail(user.email, otp);
 
     const devResponse = process.env.NODE_ENV === 'development' ? { otp } : {};
-    
+
     res.status(200).json({
       success: true,
       message: 'OTP sent',
@@ -140,12 +151,12 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 export const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId, otp } = req.body;
-    
+
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return next(new AppError('User not found', 404));
 
     const otpRecord = await prisma.oTPRecord.findFirst({
-      where: { 
+      where: {
         email: user.email,
         otp,
         purpose: 'RESET_PASSWORD',
@@ -174,7 +185,7 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
 export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId, resetToken, newPassword } = req.body;
-    
+
     const tokenRecord = await prisma.oTPRecord.findFirst({
       where: { id: resetToken, purpose: 'RESET_PASSWORD', used: true }
     });
@@ -182,7 +193,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     if (!tokenRecord) return next(new AppError('Invalid reset attempt', 400));
 
     const passwordHash = await authService.hashPassword(newPassword);
-    
+
     await prisma.user.update({
       where: { id: userId },
       data: { passwordHash }
@@ -199,11 +210,11 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 export const verifyRegistrationOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId, otp } = req.body;
-    
+
     const pendingUser = await prisma.pendingUser.findFirst({
       where: { id: userId }
     });
-    
+
     if (!pendingUser) return next(new AppError('Session expired. Please register again.', 400));
 
     const otpRecord = await prisma.oTPRecord.findFirst({
@@ -261,7 +272,7 @@ export const verifyRegistrationOtp = async (req: Request, res: Response, next: N
 export const resendRegistrationOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.body;
-    
+
     const pendingUser = await prisma.pendingUser.findUnique({ where: { id: userId } });
     if (!pendingUser) {
       const existingUser = await prisma.user.findUnique({ where: { id: userId } });

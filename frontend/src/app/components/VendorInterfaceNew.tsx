@@ -11,7 +11,7 @@ import { Textarea } from '@/app/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 // Removed 'History' from this import list to fix the duplicate declaration error
 import {
-  Package, Plus, Edit, Trash2, Star, Settings, Store, 
+  Package, Plus, Edit, Trash2, Star, Settings, Store,
   ClipboardList, Mail, Phone, MapPin, DollarSign,
   ShoppingCart, Truck, MessageSquare, RefreshCw, AlertTriangle
 } from 'lucide-react';
@@ -30,11 +30,11 @@ function MetricCard({ label, value, icon: Icon, colorClass }: { label: string; v
 }
 
 const NAV_ITEMS: SidebarItem[] = [
-  { id: 'orders',    label: 'Orders',    icon: ClipboardList },
-  { id: 'inventory', label: 'Inventory', icon: Package       },
-  { id: 'issues',    label: 'Issues',    icon: AlertTriangle },
-  { id: 'reviews',   label: 'Reviews',   icon: Star          },
-  { id: 'settings',  label: 'Settings',  icon: Settings      },
+  { id: 'orders', label: 'Orders', icon: ClipboardList },
+  { id: 'inventory', label: 'Inventory', icon: Package },
+  { id: 'issues', label: 'Issues', icon: AlertTriangle },
+  { id: 'reviews', label: 'Reviews', icon: Star },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 // Moved outside the main component to prevent input focus loss on re-renders
@@ -42,9 +42,9 @@ function ProductFormFields({ productForm, setProductForm, onSubmit, label }: { p
   return (
     <div className="space-y-4 pt-2">
       {[
-        { f: 'name',  l: 'Product Name', t: 'text',   ph: 'e.g. Masala Chai' },
-        { f: 'price', l: 'Price (₹)',    t: 'number', ph: '0' },
-        { f: 'stock', l: 'Stock Qty',    t: 'number', ph: '10' },
+        { f: 'name', l: 'Product Name', t: 'text', ph: 'e.g. Masala Chai' },
+        { f: 'price', l: 'Price (₹)', t: 'number', ph: '0' },
+        { f: 'stock', l: 'Stock Qty', t: 'number', ph: '10' },
       ].map(({ f, l, t, ph }) => (
         <div key={f} className="space-y-1">
           <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{l}</Label>
@@ -104,25 +104,25 @@ export function VendorInterface() {
   };
 
   const [activeTab, setActiveTab] = useState('orders');
-  const vendor   = vendors.find(v => v.userId === currentUser?.id);
+  const vendor = vendors.find(v => v.userId === currentUser?.id);
   const vendorId = vendor?.id || currentUser?.id;
-  const vendorProducts  = products.filter(p => p.vendorId === vendorId);
-  const vendorOrders    = orders; // API natively pre-filters to the authenticated Vendor's scope
-  const activeOrders    = vendorOrders.filter(o => ['pending', 'accepted', 'picked'].includes(o.status));
+  const vendorProducts = products.filter(p => p.vendorId === vendorId);
+  const vendorOrders = orders; // API natively pre-filters to the authenticated Vendor's scope
+  const activeOrders = vendorOrders.filter(o => ['pending', 'accepted', 'picked'].includes(o.status));
   const completedOrders = vendorOrders.filter(o => o.status === 'delivered');
-  const vendorReviews   = vendorOrders.filter(o => o.vendorRating);
-  const avgRating       = vendorReviews.length ? (vendorReviews.reduce((s, o) => s + (o.vendorRating || 0), 0) / vendorReviews.length).toFixed(1) : '0.0';
+  const vendorReviews = vendorOrders.filter(o => o.vendorRating);
+  const avgRating = vendorReviews.length ? (vendorReviews.reduce((s, o) => s + (o.vendorRating || 0), 0) / vendorReviews.length).toFixed(1) : '0.0';
 
   const navItems = NAV_ITEMS.map(item => ({
     ...item,
     badge: item.id === 'orders' && activeOrders.length > 0 ? activeOrders.length : undefined,
   }));
 
-  const [showProductDialog, setShowProductDialog]   = useState(false);
-  const [editingProduct, setEditingProduct]         = useState<Product | null>(null);
-  const [productForm, setProductForm]               = useState({ name: '', category: 'Food', price: 0, description: '', image: '', stock: 10 });
-  const [settingsData, setSettingsData]             = useState({ name: vendor?.name || '', email: currentUser?.email || '', phone: currentUser?.phone || '', address: vendor?.location || '' });
-  const [isSavingSettings, setIsSavingSettings]     = useState(false);
+  const [showProductDialog, setShowProductDialog] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productForm, setProductForm] = useState({ name: '', category: 'Food', price: 0, description: '', image: '', stock: 10 });
+  const [settingsData, setSettingsData] = useState({ name: vendor?.name || '', email: currentUser?.email || '', phone: currentUser?.phone || '', address: vendor?.location || '' });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const handleSaveSettings = async () => {
     if (!vendor || !currentUser) return;
@@ -178,7 +178,7 @@ export function VendorInterface() {
 
   return (
     <div className="min-h-screen bg-[#F0F4FF] dark:bg-[#0A1628] flex flex-col">
-      <Header /> 
+      <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar items={navItems} activeId={activeTab} onSelect={setActiveTab} accentColor="#0F766E"
           header={
@@ -197,9 +197,9 @@ export function VendorInterface() {
             {/* Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <MetricCard label="Total Earnings" value={`₹${vendor?.totalEarnings || 0}`} icon={DollarSign} colorClass="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" />
-              <MetricCard label="Total Orders"   value={vendor?.totalOrders || 0}           icon={ShoppingCart} colorClass="bg-blue-100 dark:bg-blue-900/30 text-[#1E3A8A] dark:text-blue-400" />
-              <MetricCard label="Avg Rating"     value={`${avgRating} ★`}                   icon={Star}        colorClass="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-              <MetricCard label="Products"       value={vendorProducts.length}              icon={Package}     colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" />
+              <MetricCard label="Total Orders" value={vendor?.totalOrders || 0} icon={ShoppingCart} colorClass="bg-blue-100 dark:bg-blue-900/30 text-[#1E3A8A] dark:text-blue-400" />
+              <MetricCard label="Avg Rating" value={`${avgRating} ★`} icon={Star} colorClass="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+              <MetricCard label="Products" value={vendorProducts.length} icon={Package} colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" />
             </div>
 
             {/* ── ORDERS ── */}
@@ -229,7 +229,7 @@ export function VendorInterface() {
                           <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${order.status === 'picked' ? 'bg-blue-100 text-blue-700' : order.status === 'accepted' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{order.status}</span>
                         </div>
                         <p className="text-sm font-semibold text-[#1E3A8A] dark:text-blue-300 mb-1">{(order.items || order.products || []).length} items · ₹{order.total + 30}</p>
-                        
+
                         <div className="bg-white dark:bg-[#0F1E3A] rounded-lg p-2.5 text-xs mb-3 border border-blue-50 dark:border-blue-900/10">
                           <p className="font-bold text-slate-600 dark:text-slate-300 mb-1.5">Order Items:</p>
                           <ul className="text-slate-500 dark:text-slate-400 space-y-1">
@@ -245,23 +245,25 @@ export function VendorInterface() {
                         {order.courierId && (
                           <div className="bg-white dark:bg-[#0F1E3A] rounded-lg p-3 text-xs mb-3 border border-blue-100 dark:border-blue-900/20">
                             <p className="font-bold text-[#1E3A8A] dark:text-blue-400 mb-1 flex items-center gap-1"><Truck className="w-3 h-3" /> Delivery Partner</p>
-                            {(() => { const u = order.courier || users.find((us: any) => us.id === order.courierId); return (
-                              <div className="space-y-0.5 text-slate-600 dark:text-slate-400">
-                                <p><span className="font-semibold">Name:</span> {u?.name || 'Assigned Rider'}</p>
-                                <p><span className="font-semibold">Phone:</span> {u?.phone || 'Available shortly'}</p>
-                              </div>
-                            ); })()}
+                            {(() => {
+                              const u = order.courier || users.find((us: any) => us.id === order.courierId); return (
+                                <div className="space-y-0.5 text-slate-600 dark:text-slate-400">
+                                  <p><span className="font-semibold">Name:</span> {u?.name || 'Assigned Rider'}</p>
+                                  <p><span className="font-semibold">Phone:</span> {u?.phone || 'Available shortly'}</p>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                         {order.status === 'pending' && (
                           <button onClick={async () => {
-                              try {
-                                await updateOrderStatus(order.id, 'accepted');
-                                toast.success('Order accepted!');
-                              } catch (err) {
-                                toast.error('Failed to accept order');
-                              }
-                            }}
+                            try {
+                              await updateOrderStatus(order.id, 'accepted');
+                              toast.success('Order accepted!');
+                            } catch (err) {
+                              toast.error('Failed to accept order');
+                            }
+                          }}
                             className="w-full h-9 bg-[#1E3A8A] hover:bg-[#2B4FBA] text-white text-xs font-bold rounded-xl transition-all active:scale-95">Accept Order</button>
                         )}
                       </div>
@@ -362,7 +364,7 @@ export function VendorInterface() {
                 <div className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 p-5 shadow-sm flex items-center gap-5">
                   <div className="text-5xl font-extrabold text-[#1E3A8A] dark:text-blue-300" style={{ fontFamily: 'Syne, sans-serif' }}>{avgRating}</div>
                   <div>
-                    <div className="flex gap-0.5 mb-1">{[1,2,3,4,5].map(i => <Star key={i} className={`w-4 h-4 ${i <= Math.round(Number(avgRating)) ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />)}</div>
+                    <div className="flex gap-0.5 mb-1">{[1, 2, 3, 4, 5].map(i => <Star key={i} className={`w-4 h-4 ${i <= Math.round(Number(avgRating)) ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />)}</div>
                     <p className="text-xs text-slate-400">{vendorReviews.length} reviews</p>
                   </div>
                 </div>
@@ -375,7 +377,7 @@ export function VendorInterface() {
                   <div key={order.id} className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-mono text-slate-400 text-xs">#{order.id}</p>
-                      <div className="flex gap-0.5">{[1,2,3,4,5].map(i => <Star key={i} className={`w-3.5 h-3.5 ${i <= (order.vendorRating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />)}</div>
+                      <div className="flex gap-0.5">{[1, 2, 3, 4, 5].map(i => <Star key={i} className={`w-3.5 h-3.5 ${i <= (order.vendorRating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />)}</div>
                     </div>
                     {order.vendorFeedback && <p className="text-sm text-slate-600 dark:text-slate-300 italic">"{order.vendorFeedback}"</p>}
                     <p className="text-xs text-slate-400 mt-2">{new Date(order.createdAt || order.date).toLocaleDateString('en-IN')}</p>
@@ -395,18 +397,18 @@ export function VendorInterface() {
                 <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white" style={{ fontFamily: 'Syne, sans-serif' }}>Shop Settings</h1>
                 <div className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 p-6 shadow-sm space-y-4">
                   {[
-                    { label: 'Shop Name',      icon: Store, field: 'name',    type: 'text',  ph: 'Shop name' },
-                    { label: 'Contact Email',  icon: Mail,  field: 'email',   type: 'email', ph: 'shop@iitk.ac.in' },
-                    { label: 'Phone',          icon: Phone, field: 'phone',   type: 'tel',   ph: '10-digit number' },
-                    { label: 'Location',       icon: MapPin,field: 'address', type: 'text',  ph: 'Shop location' },
+                    { label: 'Shop Name', icon: Store, field: 'name', type: 'text', ph: 'Shop name' },
+                    { label: 'Contact Email', icon: Mail, field: 'email', type: 'email', ph: 'shop@example.com' },
+                    { label: 'Phone', icon: Phone, field: 'phone', type: 'tel', ph: '10-digit number' },
+                    { label: 'Location', icon: MapPin, field: 'address', type: 'text', ph: 'Shop location' },
                   ].map(f => {
                     const Icon = f.icon;
                     return (
                       <div key={f.field} className="space-y-1">
                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" />{f.label}</Label>
-                        <Input 
-                          type={f.type} 
-                          placeholder={f.ph} 
+                        <Input
+                          type={f.type}
+                          placeholder={f.ph}
                           value={(settingsData as any)[f.field]}
                           onChange={e => {
                             let val = e.target.value;
@@ -416,9 +418,8 @@ export function VendorInterface() {
                             setSettingsData({ ...settingsData, [f.field]: val });
                           }}
                           disabled={f.field === 'email'}
-                          className={`h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed ${
-                            f.field === 'phone' && settingsData.phone && !isValidPhone(settingsData.phone) ? 'border-red-500 focus:border-red-500' : ''
-                          }`} 
+                          className={`h-11 bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100 dark:border-blue-900/30 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed ${f.field === 'phone' && settingsData.phone && !isValidPhone(settingsData.phone) ? 'border-red-500 focus:border-red-500' : ''
+                            }`}
                         />
                         {f.field === 'phone' && settingsData.phone && !isValidPhone(settingsData.phone) && (
                           <p className="text-[10px] text-red-500 mt-1 pl-1 font-semibold">
@@ -468,8 +469,8 @@ export function VendorInterface() {
 function History({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
-      <path d="M12 7v5l4 2"/>
+      <path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+      <path d="M12 7v5l4 2" />
     </svg>
-  );  
+  );
 }

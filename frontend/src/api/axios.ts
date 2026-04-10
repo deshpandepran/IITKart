@@ -30,12 +30,19 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      if (error.config?.url?.includes('/auth/login')) {
+        return Promise.reject(error);
+      }
+
       try {
         localStorage.removeItem('token');
       } catch (e) {
         // Ignore errors on logout
       }
-      window.location.href = '/auth';
+
+      if (window.location.pathname !== '/auth') {
+        window.location.href = '/auth';
+      }
     }
     return Promise.reject(error);
   }
