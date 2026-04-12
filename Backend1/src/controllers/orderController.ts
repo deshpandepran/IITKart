@@ -120,6 +120,58 @@ const processCheckout = async (
   return order;
 };
 
+export const validateCart = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { items } = req.body;
+
+    if (!items || items.length === 0) {
+      return next(new AppError('Cart items are required', 400));
+    }
+
+    const productIds = items.map((i: any) => i.productId);
+    const products: any[] = await prisma.product.findMany({ where: { id: { in: productIds } } });
+
+    const validationResults = items.map((item: any) => {
+      const product = (products as any[]).find((p: any) => p.id === item.productId);
+      
+      if (!product) {
+        return {
+          productId: item.productId,
+          requestedQuantity: item.quantity,
+          available: false,
+          availableQuantity: 0,
+          reason: 'Product not found'
+        };
+      }
+
+      const availableQuantity = Number(product.stockQuantity);
+      const isAvailable = availableQuantity >= item.quantity;
+
+      return {
+        productId: item.productId,
+        productName: product.name,
+        requestedQuantity: item.quantity,
+        availableQuantity,
+        available: isAvailable,
+        reason: isAvailable ? null : `Only ${availableQuantity} in stock`
+      };
+    });
+
+    const allAvailable = validationResults.every((r: any) => r.available);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        allAvailable,
+        items: validationResults,
+        message: allAvailable ? 'All items are in stock' : 'Some items have insufficient stock'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const placeOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { vendorId, items, deliveryAddress, paymentMethod, useKartCoins } = req.body;
@@ -205,6 +257,17 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response, next: N
       const vendorProfile = await prisma.vendorProfile.findUnique({ where: { userId: req.user.id } });
       if (existingOrder.vendorId !== vendorProfile?.vendorId) {
         return next(new AppError('Unauthorized: Cannot modify other vendor orders', 403));
+      }
+    }
+
+    // Verify user ownership - users can only cancel their own orders (Issue #91)
+    if (req.user.role === 'user') {
+      if (existingOrder.userId !== req.user.id) {
+        return next(new AppError('Unauthorized: You can only modify your own orders', 403));
+      }
+      // Users can only cancel orders, not change to other statuses
+      if (status !== 'cancelled') {
+        return next(new AppError('Unauthorized: Users can only cancel orders', 403));
       }
     }
 

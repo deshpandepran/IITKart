@@ -79,7 +79,7 @@ export function UserInterface() {
   const [selectedVendor, setSelectedVendor] = useState('all');
   const [favorites, setFavorites] = useState<string[]>(currentUser?.favorites || []);
 
-  const [settingsData, setSettingsData = useState({
+  const [settingsData, setSettingsData] = useState({
     name: currentUser?.name || '', email: currentUser?.email || '',
     phone: currentUser?.phone || '', address: currentUser?.address || '', photo: currentUser?.photo || ''
   });
@@ -124,6 +124,7 @@ export function UserInterface() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<any>(null);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (authLoading) return;
@@ -191,6 +192,45 @@ export function UserInterface() {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      
+      // Step 1: Validate cart before checkout (Issue #93)
+      const validateResponse = await fetch(`${apiUrl}/orders/validate-cart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          items: cart.map(i => ({ productId: i.productId, quantity: i.quantity }))
+        })
+      });
+
+      const validationData = await validateResponse.json();
+      
+      if (!validationData.success || !validationData.data.allAvailable) {
+        // Some items are out of stock
+        const outOfStockItems = validationData.data.items.filter((item: any) => !item.available);
+        const message = outOfStockItems
+          .map((item: any) => `${item.productName}: Only ${item.availableQuantity} in stock`)
+          .join('\n');
+        
+        toast.error(`Stock unavailable:\n${message}`);
+        
+        // Auto-adjust cart quantities to available amounts
+        const updatedCart = cart.map(cartItem => {
+          const validation = validationData.data.items.find((v: any) => v.productId === cartItem.productId);
+          if (validation && !validation.available) {
+            return { ...cartItem, quantity: Math.min(cartItem.quantity, validation.availableQuantity) };
+          }
+          return cartItem;
+        }).filter(item => item.quantity > 0);
+        
+        setCart(updatedCart);
+        setIsProcessingCheckout(false);
+        return;
+      }
+
+      // Step 2: Proceed with checkout
       const response = await fetch(`${apiUrl}/orders`, {
         method: 'POST',
         headers: {
@@ -257,6 +297,48 @@ export function UserInterface() {
     addComplaint({ id: `CMP${Date.now()}`, orderId: complaintDialog.orderId, userId: currentUser.id, userName: currentUser.name, userEmail: currentUser.email, subject: complaintSubject, description: complaintDescription, status: 'pending', date: new Date().toISOString(), type: 'order' });
     toast.success('Complaint submitted!');
     setComplaintDialog({ open: false, orderId: '' }); setComplaintSubject(''); setComplaintDescription('');
+  };
+
+  // Issue #95: Cancel order functionality
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    if (newStatus !== 'cancelled') {
+      toast.error('Only order cancellation is allowed');
+      return;
+    }
+
+    setCancellingOrderId(orderId);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login first');
+        return;
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const response = await fetch(`${apiUrl}/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to cancel order');
+        return;
+      }
+
+      const { data: updatedOrder } = await response.json();
+      updateOrder(orderId, updatedOrder);
+      toast.success('Order cancelled successfully! Stock has been reverted.');
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast.error('Failed to cancel order. Please try again.');
+    } finally {
+      setCancellingOrderId(null);
+    }
   };
 
   const generateReceipt = (order: any) => {
@@ -513,8 +595,15 @@ export function UserInterface() {
                             {order.status === 'delivered' && '✨ Order delivered! Hope you enjoyed your purchase'}
                           </div>
                           {order.status === 'pending' && (
-                            <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all shadow shadow-red-500/20 active:scale-95">
-                              Cancel Order
+                            <button onClick={() => updateOrderStatus(order.id, 'cancelled')} disabled={cancellingOrderId === order.id} className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all shadow shadow-red-500/20 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5">
+                              {cancellingOrderId === order.id ? (
+                                <>
+                                  <Loader className="w-3 h-3 animate-spin" />
+                                  Cancelling...
+                                </>
+                              ) : (
+                                'Cancel Order'
+                              )}
                             </button>
                           )}
                         </div>
@@ -862,12 +951,23 @@ export function UserInterface() {
               ) : cart.map(item => {
                 const product = products.find(p => p.id === item.productId);
                 if (!product) return null;
+                
+                // Ensure stockQuantity is a valid number (Issue #94)
+                const availableStock = typeof product.stockQuantity === 'number' ? product.stockQuantity : Number(product.stockQuantity || 0);
+                const stockWarning = availableStock < item.quantity;
+                const outOfStock = availableStock === 0;
+                
                 return (
-                  <div key={item.productId} className="flex gap-3 bg-[#F0F4FF] dark:bg-[#0A1628] rounded-2xl p-3 border border-blue-100/50 dark:border-blue-900/20">
+                  <div key={item.productId} className={`flex gap-3 rounded-2xl p-3 border transition-all ${outOfStock ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' : stockWarning ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900/30' : 'bg-[#F0F4FF] dark:bg-[#0A1628] border-blue-100/50 dark:border-blue-900/20'}`}>
                     <img src={getImageUrl(product.image)} alt={product.name} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-[#0F172A] dark:text-white text-sm truncate">{product.name}</h4>
-                      <p className="text-xs text-slate-400 mb-2 truncate">{product.vendorName}</p>
+                      <h4 className="font-bold text-[#0F172A] dark:text-white text-sm line-clamp-1">{product.name}</h4>
+                      <p className="text-xs text-slate-400 mb-2">{product.vendorName}</p>
+                      {(stockWarning || outOfStock) && (
+                        <p className={`text-xs font-semibold mb-1 ${outOfStock ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                          {outOfStock ? '❌ Out of stock' : `⚠️ Only ${availableStock} available`}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-[#1E3A8A] dark:text-blue-300 text-sm">₹{product.price * item.quantity}</span>
                         <div className="flex items-center gap-1.5">

@@ -742,9 +742,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (quantity <= 0) {
       removeFromCart(productId);
     } else {
+      // Issue #94: Validate quantity doesn't exceed available stock
+      const product = products.find(p => p.id === productId);
+      const availableStock = product ? (typeof product.stockQuantity === 'number' ? product.stockQuantity : Number(product.stockQuantity || 0)) : Infinity;
+      
+      // Cap quantity to available stock
+      const validQuantity = Math.min(quantity, Math.max(1, availableStock));
+      
       setCart(prev =>
         prev.map(item =>
-          item.productId === productId ? { ...item, quantity } : item
+          item.productId === productId ? { ...item, quantity: validQuantity } : item
         )
       );
     }
@@ -770,15 +777,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User | null> => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const { user, accessToken } = response.data.data;
       localStorage.setItem('token', accessToken);
       setCurrentUser(user);
       return user;
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Login failed. Please try again.';
+      console.error("Login failed:", errorMsg);
+      // Store error in session storage temporarily so AuthPage can access it
+      sessionStorage.setItem('loginError', errorMsg);
       return null;
     }
   };
