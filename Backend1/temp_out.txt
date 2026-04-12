@@ -1,0 +1,4 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "IITKart_data", schema "public" at "localhost:5432"
+

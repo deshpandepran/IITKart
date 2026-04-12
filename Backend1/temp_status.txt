@@ -1,0 +1,7 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "IITKart_data", schema "public" at "localhost:5432"
+Error: P3015
+
+Could not find the migration file at prisma\migrations\20260404103357_m\migration.sql. Please delete the directory or restore the migration file.
+

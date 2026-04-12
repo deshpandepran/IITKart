@@ -91,18 +91,6 @@ export function HomePage() {
     }
   }, [currentUser, authLoading, navigate]);
   
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F0F4FF] dark:bg-[#0A1628]">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setStatsVisible(true); },
@@ -115,6 +103,18 @@ export function HomePage() {
   const orders = useCountUp(500, 1800, statsVisible);
   const vendors = useCountUp(6, 800, statsVisible);
   const riders = useCountUp(50, 1200, statsVisible);
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F0F4FF] dark:bg-[#0A1628]">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F0F4FF] dark:bg-[#0A1628] overflow-x-hidden">

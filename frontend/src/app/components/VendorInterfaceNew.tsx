@@ -135,6 +135,16 @@ export function VendorInterface() {
   const [settingsData, setSettingsData] = useState({ name: vendor?.name || '', email: currentUser?.email || '', phone: currentUser?.phone || '', address: vendor?.location || '' });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
+  // Sync settings data when currentUser/vendor loads asynchronously
+  useEffect(() => {
+    setSettingsData({
+      name: vendor?.name || currentUser?.name || '',
+      email: currentUser?.email || '',
+      phone: currentUser?.phone || '',
+      address: vendor?.location || currentUser?.address || ''
+    });
+  }, [currentUser?.id, vendor?.id]);
+
   const handleSaveSettings = async () => {
     if (!vendor || !currentUser) return;
     
