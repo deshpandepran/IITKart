@@ -86,7 +86,9 @@ export function AuthPage() {
       // user.role should now be CUSTOMER/VENDOR/RIDER/ADMIN after you update AppContext.tsx
       navigateToRole(user.role as AppRole);
     } else {
-      toast.error('Invalid email or password');
+      const errorMsg = sessionStorage.getItem('loginError') || 'Invalid email or password';
+      sessionStorage.removeItem('loginError');
+      toast.error(errorMsg);
     }
   };
 

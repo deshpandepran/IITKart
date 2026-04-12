@@ -15,11 +15,22 @@ export const getVendors = async (req: any, res: Response, next: NextFunction) =>
 
 export const getAllProducts = async (req: any, res: Response, next: NextFunction) => {
   try {
+    // Issue #94: Filter by both inStock AND stockQuantity > 0 to prevent showing products with 0 stock
     const products = await prisma.product.findMany({
-      where: { inStock: true, isDeleted: false },
+      where: { 
+        inStock: true, 
+        isDeleted: false,
+        stockQuantity: { gt: 0 }  // Only return products with actual stock available
+      },
       include: { vendor: { select: { name: true } } }
     });
-    res.status(200).json({ success: true, data: products });
+    
+    const formattedProducts = products.map(p => ({
+      ...p,
+      stockQuantity: typeof p.stockQuantity === 'number' ? p.stockQuantity : Number(p.stockQuantity || 0)
+    }));
+    
+    res.status(200).json({ success: true, data: formattedProducts });
   } catch (error) { next(error); }
 };
 
@@ -27,7 +38,8 @@ export const getVendorById = async (req: any, res: Response, next: NextFunction)
   try {
     const vendor = await prisma.vendor.findUnique({
       where: { id: req.params.id },
-      include: { products: { where: { inStock: true, isDeleted: false } } }
+      // Issue #94: Filter by both inStock AND stockQuantity > 0
+      include: { products: { where: { inStock: true, isDeleted: false, stockQuantity: { gt: 0 } } } }
     });
     if (!vendor) return next(new AppError('Vendor not found', 404));
     res.status(200).json({ success: true, data: vendor });

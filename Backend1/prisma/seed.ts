@@ -8,18 +8,19 @@ async function main() {
   console.log('Starting seed...');
 
   // Clean the database
-  await prisma.passwordResetToken.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.deliveryIssue.deleteMany();
-  await prisma.complaint.deleteMany();
-  await prisma.orderItem.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.productReview.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.courierJob.deleteMany();
-  await prisma.courierProfile.deleteMany();
-  await prisma.vendor.deleteMany();
-  await prisma.user.deleteMany();
+  try { await prisma.earningsTransaction.deleteMany(); } catch(e) {}
+  try { await prisma.payment.deleteMany(); } catch(e) {}
+  try { await prisma.deliveryIssue.deleteMany(); } catch(e) {}
+  try { await prisma.complaint.deleteMany(); } catch(e) {}
+  try { await prisma.orderItem.deleteMany(); } catch(e) {}
+  try { await prisma.order.deleteMany(); } catch(e) {}
+  try { await prisma.productReview.deleteMany(); } catch(e) {}
+  try { await prisma.product.deleteMany(); } catch(e) {}
+  try { await prisma.courierJob.deleteMany(); } catch(e) {}
+  try { await prisma.courierProfile.deleteMany(); } catch(e) {}
+  try { await prisma.vendor.deleteMany(); } catch(e) {}
+  try { await prisma.pendingUser.deleteMany(); } catch(e) {}
+  try { await prisma.user.deleteMany(); } catch(e) {}
 
   const passwordHash = await bcrypt.hash('password123', 12);
 
@@ -58,9 +59,10 @@ async function main() {
   ];
 
   const vendorRecords = [];
-  for (const v of vendorsData) {
+  for (let i = 0; i < vendorsData.length; i++) {
+    const v = vendorsData[i];
     const user = await prisma.user.create({
-      data: { name: v.name + ' Owner', email: v.email, passwordHash, role: 'vendor', phone: '9000000000', isVerified: true }
+      data: { name: v.name + ' Owner', email: v.email, passwordHash, role: 'vendor', phone: `900000000${i}`, isVerified: true }
     });
     const vendor = await prisma.vendor.create({
       data: { userId: user.id, name: v.name, email: v.email, rating: 4.5, totalOrders: 100, totalEarnings: 50000, location: v.location, availability: '9 AM - 9 PM' }
@@ -75,9 +77,10 @@ async function main() {
   ];
   
   const courierRecords = [];
-  for (const c of couriersData) {
+  for (let i = 0; i < couriersData.length; i++) {
+    const c = couriersData[i];
     const user = await prisma.user.create({
-      data: { name: c.name, email: c.email, passwordHash, role: 'courier', phone: '8000000000', isVerified: true }
+      data: { name: c.name, email: c.email, passwordHash, role: 'courier', phone: `800000000${i}`, isVerified: true }
     });
     const profile = await prisma.courierProfile.create({
       data: { userId: user.id, totalDeliveries: c.totalDeliveries, totalEarnings: c.totalDeliveries * 30, experience: '1 year', availability: 'Evening' }
@@ -91,12 +94,13 @@ async function main() {
   const photocopy = vendorRecords.find(v => v.email === 'photocopy@iitk.ac.in')!;
   
   const productsData = [
-    { vendorId: amul.id, name: 'Amul Kool', category: 'Beverage', price: 25, description: 'Chilled flavoured milk', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: amul.id, name: 'Cheese Sandwich', category: 'Food', price: 40, description: 'Grilled cheese sandwich', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: amul.id, name: 'Butter Toast', category: 'Food', price: 20, description: 'Crispy buttered toast', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: photocopy.id, name: 'A4 Print B/W', category: 'Printing', price: 2, description: 'Single side black and white print', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: photocopy.id, name: 'A4 Print Color', category: 'Printing', price: 10, description: 'Color print', image: 'https://via.placeholder.com/150', inStock: true },
-    { vendorId: photocopy.id, name: 'Spiral Binding', category: 'Stationery', price: 30, description: 'Up to 100 pages', image: 'https://via.placeholder.com/150', inStock: true },
+    // Issue #94: Include stockQuantity when seeding products
+    { vendorId: amul.id, name: 'Amul Kool', category: 'Beverage', price: 25, description: 'Chilled flavoured milk', image: 'https://via.placeholder.com/150', inStock: true, stockQuantity: 50 },
+    { vendorId: amul.id, name: 'Cheese Sandwich', category: 'Food', price: 40, description: 'Grilled cheese sandwich', image: 'https://via.placeholder.com/150', inStock: true, stockQuantity: 30 },
+    { vendorId: amul.id, name: 'Butter Toast', category: 'Food', price: 20, description: 'Crispy buttered toast', image: 'https://via.placeholder.com/150', inStock: true, stockQuantity: 25 },
+    { vendorId: photocopy.id, name: 'A4 Print B/W', category: 'Printing', price: 2, description: 'Single side black and white print', image: 'https://via.placeholder.com/150', inStock: true, stockQuantity: 100 },
+    { vendorId: photocopy.id, name: 'A4 Print Color', category: 'Printing', price: 10, description: 'Color print', image: 'https://via.placeholder.com/150', inStock: true, stockQuantity: 50 },
+    { vendorId: photocopy.id, name: 'Spiral Binding', category: 'Stationery', price: 30, description: 'Up to 100 pages', image: 'https://via.placeholder.com/150', inStock: true, stockQuantity: 20 },
     // Fill the rest up to 22 products
   ];
 
@@ -110,7 +114,8 @@ async function main() {
       price: Math.floor(Math.random() * 200) + 10,
       description: 'Mock description for product',
       image: 'https://via.placeholder.com/150',
-      inStock: true
+      inStock: true,
+      stockQuantity: Math.floor(Math.random() * 50) + 10  // Random stock between 10-60
     });
   }
 
