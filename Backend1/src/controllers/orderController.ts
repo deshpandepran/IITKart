@@ -297,6 +297,21 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response, next: N
             }
           });
         }
+
+        // Handle Kart Coins properly on cancellation
+        const kartCoinsChange = existingOrder.kartCoinsUsed - (existingOrder.coinsProcessed ? existingOrder.kartCoinsEarned : 0);
+        if (kartCoinsChange !== 0) {
+          await tx.user.update({
+             where: { id: existingOrder.userId },
+             data: { kartCoins: { increment: kartCoinsChange } }
+          });
+        }
+        if (existingOrder.coinsProcessed) {
+          await tx.order.update({
+             where: { id: existingOrder.id },
+             data: { coinsProcessed: false }
+          });
+        }
       }
 
       return updatedOrder;

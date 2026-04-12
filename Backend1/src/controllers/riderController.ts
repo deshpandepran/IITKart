@@ -49,7 +49,12 @@ export const getPendingDeliveries = async (req: AuthRequest, res: Response, next
       where: { 
         status: { in: ['pending', 'accepted'] }, 
         courierId: null,
-        id: { notIn: profile.ignoredOrders }
+        id: { notIn: profile.ignoredOrders },
+        OR: [
+          { paymentMethod: 'COD' },
+          { paymentMethod: 'Cash on Delivery' },
+          { paymentStatus: 'success' }
+        ]
       },
       include: { vendor: { select: { name: true, location: true } } },
       orderBy: { createdAt: 'desc' }
@@ -145,7 +150,7 @@ export const markDelivered = async (req: AuthRequest, res: Response, next: NextF
       if (!order.coinsProcessed) {
         await tx.user.update({
           where: { id: order.userId },
-          data: { kartCoins: { increment: order.kartCoinsEarned - order.kartCoinsUsed } }
+          data: { kartCoins: { increment: order.kartCoinsEarned } }
         });
       }
 
