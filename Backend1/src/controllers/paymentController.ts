@@ -78,7 +78,7 @@ export const verifyPayment = async (req: AuthRequest, res: Response, next: NextF
         where: { id: order.userId },
         data: {
           kartCoins: {
-            increment: order.kartCoinsEarned - order.kartCoinsUsed
+            increment: order.kartCoinsEarned
           }
         }
       });

@@ -707,20 +707,26 @@ export function UserInterface() {
                 </div>
                 <div className="bg-white dark:bg-[#0F1E3A] rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm p-5">
                   <h3 className="font-bold text-[#0F172A] dark:text-white mb-4 text-sm uppercase tracking-wider">Recent Earnings</h3>
-                  {userOrders.length === 0
-                    ? <p className="text-center text-slate-400 py-4 text-sm">Place an order to earn Kart Coins!</p>
-                    : userOrders.slice(0, 5).map(order => (
-                      <div key={order.id} className="flex justify-between items-center py-2.5 border-b border-blue-50 dark:border-blue-900/20 last:border-0">
-                        <div>
-                          <p className="font-semibold text-[#0F172A] dark:text-white text-sm font-mono">#{order.id}</p>
-                          <p className="text-xs text-slate-400">{new Date(order.createdAt || order.date).toLocaleDateString('en-IN')}</p>
+                  {(() => {
+                    const visibleOrders = userOrders.filter(o => 
+                      (o as any).coinsProcessed === true || 
+                      o.paymentStatus === 'success' || 
+                      ['accepted', 'picked', 'delivered'].includes(o.status)
+                    );
+                    return visibleOrders.length === 0
+                      ? <p className="text-center text-slate-400 py-4 text-sm">Place an order to earn Kart Coins!</p>
+                      : visibleOrders.slice(0, 5).map(order => (
+                        <div key={order.id} className="flex justify-between items-center py-2.5 border-b border-blue-50 dark:border-blue-900/20 last:border-0">
+                          <div>
+                            <p className="font-semibold text-[#0F172A] dark:text-white text-sm font-mono">#{order.id}</p>
+                            <p className="text-xs text-slate-400">{new Date(order.createdAt || order.date).toLocaleDateString('en-IN')}</p>
+                          </div>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-sm">
+                            <Coins className="w-4 h-4" />+{order.kartCoinsEarned}
+                          </span>
                         </div>
-                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-sm">
-                          <Coins className="w-4 h-4" />+{order.kartCoinsEarned}
-                        </span>
-                      </div>
-                    ))
-                  }
+                      ));
+                  })()}
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-5 border border-blue-100 dark:border-blue-800/30">
                   <h4 className="font-bold text-[#1E3A8A] dark:text-blue-300 mb-3 text-sm">How Kart Coins work</h4>
